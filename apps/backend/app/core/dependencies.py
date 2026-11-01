@@ -146,3 +146,4 @@ async def require_admin(
 ) -> User:
     """Enforces administrator role."""
     return current_user
+

@@ -76,3 +76,4 @@ class TokenPayload(BaseModel):
     is_admin: bool = False
     is_passenger: bool = True
     exp: Optional[int] = None
+

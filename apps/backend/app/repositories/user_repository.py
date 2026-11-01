@@ -67,3 +67,4 @@ class UserRepository(BaseRepository[User]):
 
 
 user_repository = UserRepository()
+

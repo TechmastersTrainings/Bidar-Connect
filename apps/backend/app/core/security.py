@@ -63,3 +63,4 @@ def decode_access_token(token: str) -> Dict[str, Any]:
                 options={"verify_exp": True, "verify_signature": True},
             )
         raise
+
