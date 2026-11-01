@@ -1,8 +1,8 @@
 # Bidar Connect — Project Status & Phase Tracker
 
 Last Updated: 2026-11-01  
-Current Phase: Phase 5 (Authentication & Authorisation)  
-Current Status: **PHASE 5 COMPLETE — JWT AUTHENTICATION, SERVER-SIDE RBAC & FRONTEND AUTH PROVIDER VERIFIED**
+Current Phase: Phase 6 (Passenger Portal)  
+Current Status: **PHASE 6 COMPLETE — PASSENGER PORTAL, DIGITAL RIDE PASS, SOS EMERGENCY CONTACTS & ANTI-IDOR VERIFIED**
 
 ---
 
@@ -15,9 +15,9 @@ Current Status: **PHASE 5 COMPLETE — JWT AUTHENTICATION, SERVER-SIDE RBAC & FR
 | **Phase 2** | UI/UX Design & Design System | **VERIFIED** | Strict brand rules enforced, tokens defined, component specs & portal wireframes authored (`8a2470d`) |
 | **Phase 3** | Repository & Development Foundation | **VERIFIED** | Backend (Port 8000), Public Web (Port 3000), Passenger Portal (Port 3001) running; Shared packages & CI ready (`bbc475b`) |
 | **Phase 4** | Database Architecture & Backend Foundation | **VERIFIED** | 25 PostgreSQL tables, SQLAlchemy 2.x declarative models, Alembic migrations, atomic seat reservation with `with_for_update()`, 13/13 passing automated tests (`4fd0ccc`) |
-| **Phase 5** | Authentication & Authorisation | **VERIFIED** | Cryptographic HS256 JWT tokens, phone OTP login/auto-registration, server-enforced RBAC (`require_roles`, `require_verified_driver`, `require_admin`), suspension checks, Next.js AuthContext & AuthModal, 22/22 passing automated tests |
-| **Phase 6** | Passenger Portal | **NOT STARTED** | Next Phase: Full passenger booking flow, live tickets, booking history |
-| **Phase 7** | Driver Portal | **NOT STARTED** | Requires Phase 6 approval |
+| **Phase 5** | Authentication & Authorisation | **VERIFIED** | Cryptographic HS256 JWT tokens, phone OTP login/auto-registration, server-enforced RBAC (`require_roles`, `require_verified_driver`, `require_admin`), suspension checks, Next.js AuthContext & AuthModal (`4bc8818`, `c4eb6c0`) |
+| **Phase 6** | Passenger Portal | **VERIFIED** | Full search & corridor ride selection (Bidar ⇄ Hyderabad), atomic seat booking, digital ride pass with reference code, My Bookings tabbed history, safety preferences & SOS emergency contacts, 26/26 passing automated tests |
+| **Phase 7** | Driver Portal | **NOT STARTED** | Next Phase: Driver KYC upload, vehicle verification, ride publishing, passenger manifests |
 | **Phase 8** | Ride Search & Booking Engine | **NOT STARTED** | Requires Phase 7 approval |
 | **Phase 9** | Admin Portal | **NOT STARTED** | Requires Phase 8 approval |
 | **Phase 10** | Payment, Commission & Payout System | **NOT STARTED** | Requires Phase 9 approval |
@@ -27,6 +27,30 @@ Current Status: **PHASE 5 COMPLETE — JWT AUTHENTICATION, SERVER-SIDE RBAC & FR
 | **Phase 14** | Full Security, Legal & Quality Audit | **NOT STARTED** | Requires Phase 13 approval |
 | **Phase 15** | Deployment & Production Launch | **NOT STARTED** | Requires Phase 14 approval |
 | **Phase 16** | Post-Launch Monitoring & Expansion | **NOT STARTED** | Requires Phase 15 approval |
+
+---
+
+## Detailed Task Tracker (Phase 6 Deliverables)
+
+- [x] **Task 6.1:** Backend Passenger Safety & Profile API (`apps/backend/app/api/v1/passenger.py`):
+  - `GET /api/v1/passenger/profile`: Returns passenger preferences, pickup spots, and SOS contacts.
+  - `PUT /api/v1/passenger/profile`: Updates preferred pickup landmark and confidential medical safety notes.
+  - `POST /api/v1/passenger/emergency-contacts`: Registers emergency safety contacts. Status: `VERIFIED`.
+- [x] **Task 6.2:** Enhanced Booking Endpoints (`apps/backend/app/api/v1/bookings.py`):
+  - `POST /api/v1/bookings/initiate`: Supports optional/authenticated passenger identity attachment.
+  - `GET /api/v1/bookings/my`: Returns passenger's upcoming and completed bookings list.
+  - `GET /api/v1/bookings/{id}`: Enforces Anti-IDOR (prohibits Passenger B from viewing Passenger A's ticket pass).
+  - `POST /api/v1/bookings/{id}/cancel`: Enforces booking owner check, cancels booking, computes refund, and releases seat inventory. Status: `VERIFIED`.
+- [x] **Task 6.3:** Complete Passenger Portal Frontend Experience (`apps/passenger-web/src/app/page.tsx`):
+  - Tabbed interface: "Find a Ride", "My Bookings", and "Safety & Profile".
+  - Search controls for NH 65 corridor with seat counter and fixed ₹310 pricing indicator.
+  - Driver & vehicle cards with verified KYC badges, ratings, and AC/fuel specs.
+  - Booking review modal with snapshotted fare breakdown.
+  - Digital Ticket Pass modal with reference code, driver call action, and cancellation flow.
+  - Full profile editor and emergency contact manager. Status: `VERIFIED`.
+- [x] **Task 6.4:** Automated Test Verification (`apps/backend/tests/test_passenger_api.py`):
+  - 4 automated tests verifying booking initiation, `/bookings/my` retrieval, Anti-IDOR protection, seat release on cancellation, and emergency contacts.
+  - Total test suite: 26/26 tests passing in 1.529s. Status: `VERIFIED`.
 
 ---
 

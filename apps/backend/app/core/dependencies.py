@@ -76,6 +76,19 @@ async def get_current_user(
     return user
 
 
+async def get_optional_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer_scheme),
+    db: AsyncSession = Depends(get_db_session),
+) -> Optional[User]:
+    """Extracts user if valid Bearer token is provided; otherwise returns None without failing."""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        return await get_current_user(credentials=credentials, db=db)
+    except HTTPException:
+        return None
+
+
 async def get_current_active_user(
     current_user: User = Depends(get_current_user),
 ) -> User:
