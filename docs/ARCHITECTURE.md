@@ -183,3 +183,4 @@ All endpoints in `/api/v1/` adhere to a consistent JSON response envelope. Clien
    - `max_overflow: 10`
    - `pool_timeout: 30` seconds
    - `pool_pre_ping: true` (reconnects dead connections)
+

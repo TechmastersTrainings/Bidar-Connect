@@ -165,3 +165,4 @@
 ### BR-SAF-02: Document Security & Signed CDN Access
 - Identity papers (Driving Licence, RC, Insurance, PUC) uploaded to Cloudinary must be marked `type: authenticated` or `type: private`.
 - No public URL can ever be generated for KYC assets. All administrative viewing requires backend-generated HMAC-signed URLs with a 5-minute time-to-live (TTL).
+

@@ -200,3 +200,4 @@ stateDiagram-v2
   - Trip completion and review request.
 - **FR-MOB-03 (Location Services):** Map integration for pinpointing pickup landmarks and sharing live trip progress.
 - **FR-MOB-04 (Offline Ticket Access):** Cached digital ticket with QR code accessible even when cellular connectivity drops along highway dead-zones.
+

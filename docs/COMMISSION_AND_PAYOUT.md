@@ -93,3 +93,4 @@ stateDiagram-v2
    - **Critical Rule:** The payout is **never** marked `SETTLED` solely because a request was sent to the gateway.
    - Payout status transitions to `SETTLED` **only** upon receiving the asynchronous `payout.processed` webhook with the bank Reference UTR number.
    - If the transfer bounces (`payout.reversed` / `payout.failed`), the status transitions to `FAILED`, an alert is dispatched to the driver to correct banking details, and the funds remain protected in `DRIVER_ESCROW_PAYABLE`.
+

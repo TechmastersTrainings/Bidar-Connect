@@ -52,3 +52,4 @@ Under the Motor Vehicles Act 1988, operating an unauthorized commercial passenge
 In compliance with the Information Technology (Intermediary Guidelines) Rules 2021 and Consumer Protection (E-Commerce) Rules 2020:
 - **Grievance Officer Appointment:** A designated platform Grievance Officer is published with complete contact address, dedicated phone line, and email (`grievance@bidarconnect.in`).
 - **Resolution Timeline:** Grievances must be acknowledged within 24 hours and fully investigated/resolved within 15 days.
+

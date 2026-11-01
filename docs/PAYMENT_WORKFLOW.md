@@ -114,3 +114,4 @@ A daily automated cron job runs at 02:00 AM IST:
   1. Gateway webhook emits `payment.dispute.created`.
   2. The system flags the associated booking and places a hold on any unsettled driver payout.
   3. Admin portal receives an alert to review trip logs, GPS track records, and passenger boarding confirmation before submitting evidence to the bank.
+

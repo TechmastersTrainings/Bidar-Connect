@@ -127,3 +127,4 @@ Bidar Connect consists of five distinct interfaces powered by a single central b
 2. **Security & Data Privacy:** All identity and vehicle documents stored in Cloudinary must use signed, time-bounded delivery. No unauthenticated public links are ever emitted for KYC records.
 3. **High Availability:** 99.9% uptime target for passenger search and booking workflows.
 4. **Auditability:** Every administrative modification (price change, account suspension, refund issuance) creates an immutable `audit_logs` record.
+

@@ -89,3 +89,4 @@ Identity and regulatory documents (Driving Licences, RC, Insurance, PUC) uploade
    - When an administrator inspects a document in the Admin Portal, the backend generates an HMAC-SHA1 signed Cloudinary URL with an expiration TTL of 5 minutes.
    - When the TTL expires, the link ceases to function.
    - Every document generation event is logged in `audit_logs` with the administrator's ID and timestamp.
+
