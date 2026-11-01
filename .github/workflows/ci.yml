@@ -47,3 +47,4 @@ jobs:
         run: |
           cd apps/passenger-web
           npx --yes tsc --noEmit || true
+

@@ -1,8 +1,8 @@
 # Bidar Connect — Project Status & Phase Tracker
 
 Last Updated: 2026-11-01  
-Current Phase: Phase 3 (Repository & Development Foundation)  
-Current Status: **PHASE 3 COMPLETE — BACKEND & FRONTEND SERVERS OPERATIONAL**
+Current Phase: Phase 4 (Database Architecture & Backend Foundation)  
+Current Status: **PHASE 4 COMPLETE — 25 POSTGRESQL TABLES, CONCURRENCY LOCKS & ALEMBIC MIGRATIONS VERIFIED**
 
 ---
 
@@ -13,9 +13,9 @@ Current Status: **PHASE 3 COMPLETE — BACKEND & FRONTEND SERVERS OPERATIONAL**
 | **Phase 0** | Product Discovery & Project Audit | **VERIFIED** | Clean repo verified, toolchains audited, monorepo tree structured (`fcda9c5`) |
 | **Phase 1** | Product Requirements & System Design | **VERIFIED** | Complete PRD, Functional Specs, Invariant Rules, Payments, Ledger & Architecture specifications authored (`7415c6e`) |
 | **Phase 2** | UI/UX Design & Design System | **VERIFIED** | Strict brand rules enforced, tokens defined, component specs & portal wireframes authored (`8a2470d`) |
-| **Phase 3** | Repository & Development Foundation | **VERIFIED** | Backend (Port 8000), Public Web (Port 3000), Passenger Portal (Port 3001) running; Shared packages & CI ready |
-| **Phase 4** | Database Architecture & Backend Foundation | **NOT STARTED** | Next Phase: PostgreSQL models, SQLAlchemy 2.x, Alembic migrations |
-| **Phase 5** | Authentication & Authorisation | **NOT STARTED** | Requires Phase 4 approval |
+| **Phase 3** | Repository & Development Foundation | **VERIFIED** | Backend (Port 8000), Public Web (Port 3000), Passenger Portal (Port 3001) running; Shared packages & CI ready (`bbc475b`) |
+| **Phase 4** | Database Architecture & Backend Foundation | **VERIFIED** | 25 PostgreSQL tables, SQLAlchemy 2.x declarative models, Alembic migrations, atomic seat reservation with `with_for_update()`, 13/13 passing automated tests |
+| **Phase 5** | Authentication & Authorisation | **NOT STARTED** | Next Phase: Supabase Auth, JWT verification, server-enforced RBAC |
 | **Phase 6** | Passenger Portal | **NOT STARTED** | Requires Phase 5 approval |
 | **Phase 7** | Driver Portal | **NOT STARTED** | Requires Phase 6 approval |
 | **Phase 8** | Ride Search & Booking Engine | **NOT STARTED** | Requires Phase 7 approval |
@@ -30,13 +30,22 @@ Current Status: **PHASE 3 COMPLETE — BACKEND & FRONTEND SERVERS OPERATIONAL**
 
 ---
 
-## Detailed Task Tracker (Phase 3 Deliverables)
+## Detailed Task Tracker (Phase 4 Deliverables)
 
-- [x] **Task 3.1:** Central FastAPI backend shell running live on `http://127.0.0.1:8000`. Status: `VERIFIED`.
-- [x] **Task 3.2:** Shared TypeScript types (`packages/shared-types`) and type-safe API client (`packages/api-client`). Status: `VERIFIED`.
-- [x] **Task 3.3:** Public Website (`apps/public-web`) built and running live on `http://localhost:3000`. Status: `VERIFIED`.
-- [x] **Task 3.4:** Passenger Portal (`apps/passenger-web`) built and running live on `http://localhost:3001`. Status: `VERIFIED`.
-- [x] **Task 3.5:** CI/CD Automation Pipeline (`.github/workflows/ci.yml`). Status: `VERIFIED`.
+- [x] **Task 4.1:** Complete Database ERD & Schema Spec (`docs/DATABASE_ERD.md`) covering all 25 tables across 8 core domains. Status: `VERIFIED`.
+- [x] **Task 4.2:** Async Database Engine & Session Factory (`apps/backend/app/database/session.py` & `base.py`). Status: `VERIFIED`.
+- [x] **Task 4.3:** SQLAlchemy 2.0 Declarative Mapped Models (`apps/backend/app/models/`):
+  - Identity & Users: `User`, `DriverProfile`, `PassengerProfile`, `EmergencyContact`
+  - Vehicles & Verification: `Vehicle`, `VehicleDocument`, `VehicleImage`
+  - Route Catalog & Admin Pricing: `City`, `Route`, `RouteStop`, `RoutePrice`, `CommissionRule`
+  - Ride Management: `Ride`, `RideStop`, `RideSeatInventory`
+  - Booking & Passengers: `Booking`, `BookingPassenger`, `BookingStatusHistory`
+  - Double-Entry Finance: `Payment`, `PaymentAttempt`, `DriverPayout`, `LedgerEntry`
+  - Governance & Trust: `Review`, `Report`, `AuditLog`
+- [x] **Task 4.4:** Alembic Migration Framework & Initial Schema Script (`migrations/versions/5b3f8364c569_initial_schema.py`). Status: `VERIFIED`.
+- [x] **Task 4.5:** Atomic Seat Locking Repository (`apps/backend/app/repositories/booking_repository.py`) enforcing PostgreSQL row-level locks (`with_for_update()`) preventing race conditions and double-booking. Status: `VERIFIED`.
+- [x] **Task 4.6:** Admin Pricing & Booking Coordination Services (`apps/backend/app/services/pricing_service.py` & `booking_service.py`). Status: `VERIFIED`.
+- [x] **Task 4.7:** Concurrency & Model Test Suites (`apps/backend/tests/test_database_models.py` & `test_concurrency.py`). 13/13 passing tests. Status: `VERIFIED`.
 
 ---
 
