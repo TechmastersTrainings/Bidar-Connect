@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   requestOtp: (phone: string) => Promise<{ success: boolean; devOtp?: string; error?: string }>;
-  verifyOtp: (phone: string, otp: string, fullName?: string) => Promise<{ success: boolean; error?: string }>;
+  verifyOtp: (phone: string, otp: string, fullName?: string, email?: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
@@ -55,12 +55,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const verifyOtp = async (phone: string, otp: string, fullName?: string) => {
+  const verifyOtp = async (phone: string, otp: string, fullName?: string, email?: string) => {
     try {
       const res = await fetch(`${API_BASE}/auth/otp/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phone, otp, full_name: fullName }),
+        body: JSON.stringify({ phone, otp, full_name: fullName, email }),
       });
       const data: ApiResponse<AuthTokenResponse> = await res.json();
       if (!res.ok || !data.success || !data.data) {

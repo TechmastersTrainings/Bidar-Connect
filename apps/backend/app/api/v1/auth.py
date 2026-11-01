@@ -63,6 +63,7 @@ async def verify_otp(
         phone=payload.phone,
         otp=payload.otp,
         full_name=payload.full_name,
+        email=payload.email,
     )
     return ApiResponse.ok(token_resp)
 

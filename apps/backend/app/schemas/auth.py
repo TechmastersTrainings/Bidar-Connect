@@ -32,6 +32,7 @@ class VerifyOtpRequest(BaseModel):
     phone: str = Field(..., description="Phone number matching OTP request")
     otp: str = Field(..., min_length=4, max_length=6, description="4 to 6 digit verification code")
     full_name: Optional[str] = Field(None, min_length=2, max_length=100, description="Full legal name for new registrations")
+    email: Optional[str] = Field(None, max_length=255, description="Optional email address")
 
     @field_validator("phone")
     @classmethod

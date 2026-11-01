@@ -39,6 +39,7 @@ class AuthService:
         phone: str,
         otp: str,
         full_name: Optional[str] = None,
+        email: Optional[str] = None,
     ) -> AuthTokenResponse:
         """
         Validates OTP, fetches or creates user, checks suspension status,
@@ -66,6 +67,7 @@ class AuthService:
                 db=db,
                 phone=phone,
                 full_name=display_name,
+                email=email.strip() if email and email.strip() else None,
                 is_passenger=True,
                 is_driver=False,
                 is_admin=False,
@@ -73,6 +75,13 @@ class AuthService:
             await db.commit()
             # Reload with profiles
             user = await user_repository.get_by_id_with_profiles(db, user.id)
+        else:
+            # Update name/email if user provided them
+            if full_name and full_name.strip():
+                user.full_name = full_name.strip()
+            if email and email.strip():
+                user.email = email.strip()
+            await db.commit()
 
         if user.is_suspended:
             raise HTTPException(
