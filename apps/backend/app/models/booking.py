@@ -59,3 +59,4 @@ class BookingStatusHistory(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     changed_by_user_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
 
     booking: Mapped["Booking"] = relationship("Booking", back_populates="status_history")
+

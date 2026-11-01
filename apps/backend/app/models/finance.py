@@ -67,3 +67,4 @@ class LedgerEntry(Base, UUIDPrimaryKeyMixin):
     payout_id: Mapped[Optional[str]] = mapped_column(String(36), ForeignKey("driver_payouts.id"), nullable=True)
     recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+

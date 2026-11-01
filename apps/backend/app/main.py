@@ -1,3 +1,4 @@
+from contextlib import asynccontextmanager
 import time
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
@@ -8,6 +9,19 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from apps.backend.app.core.config import settings
 from apps.backend.app.schemas.common import ApiResponse
 from apps.backend.app.api.v1.router import api_v1_router
+from apps.backend.app.database.session import engine
+from apps.backend.app.database.base import Base
+import apps.backend.app.models  # Ensure all 25 models are registered with Base.metadata
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Initialize database tables on startup in development mode
+    if "sqlite" in settings.DATABASE_URL:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+    yield
+
 
 app = FastAPI(
     title=settings.APP_NAME,
@@ -15,7 +29,8 @@ app = FastAPI(
     description="Bidar Connect — Central Intercity Carpooling API (Bidar ⇄ Hyderabad)",
     docs_url="/docs",
     redoc_url="/redoc",
-    openapi_url="/api/v1/openapi.json"
+    openapi_url="/api/v1/openapi.json",
+    lifespan=lifespan,
 )
 
 # CORS Middleware

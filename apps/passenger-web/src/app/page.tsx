@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAuth } from "../contexts/AuthContext";
+import { AuthModal } from "../components/AuthModal";
 import {
   Car,
   MapPin,
@@ -67,6 +69,8 @@ interface BookingReceipt {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function PassengerPortal() {
+  const { user, token, isAuthenticated, logout } = useAuth();
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const [origin, setOrigin] = useState("Bidar");
   const [destination, setDestination] = useState("Hyderabad");
   const [seats, setSeats] = useState(1);
@@ -78,6 +82,13 @@ export default function PassengerPortal() {
   const [passengerPhone, setPassengerPhone] = useState("+91 98765 43210");
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState<BookingReceipt | null>(null);
+
+  useEffect(() => {
+    if (user) {
+      setPassengerName(user.full_name);
+      setPassengerPhone(user.phone);
+    }
+  }, [user]);
 
   const fetchRides = async () => {
     setLoading(true);
@@ -104,6 +115,10 @@ export default function PassengerPortal() {
   }, [origin, destination]);
 
   const handleOpenBooking = (ride: Ride) => {
+    if (!isAuthenticated) {
+      setAuthModalOpen(true);
+      return;
+    }
     setSelectedRide(ride);
     setBookingConfirmed(null);
     setModalOpen(true);
@@ -159,12 +174,32 @@ export default function PassengerPortal() {
           </div>
 
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-              <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
-                SB
+            {isAuthenticated && user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs uppercase">
+                    {user.full_name ? user.full_name.substring(0, 2) : "PA"}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-semibold leading-tight text-slate-900">{user.full_name}</div>
+                    <div className="text-xs text-slate-500">{user.phone}</div>
+                  </div>
+                </div>
+                <button
+                  onClick={logout}
+                  className="text-xs text-slate-500 hover:text-red-600 px-2.5 py-1 rounded border border-slate-200 hover:border-red-200 transition-colors font-medium"
+                >
+                  Sign Out
+                </button>
               </div>
-              <span>Shiva Bhalke</span>
-            </div>
+            ) : (
+              <button
+                onClick={() => setAuthModalOpen(true)}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold shadow-sm transition-colors"
+              >
+                Sign In / Register
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -449,6 +484,9 @@ export default function PassengerPortal() {
           </div>
         </div>
       )}
+
+      {/* Authentication & Phone OTP Modal */}
+      <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
     </div>
   );
 }

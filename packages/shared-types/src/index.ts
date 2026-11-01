@@ -166,3 +166,40 @@ export interface PublishRidePayload {
   driver_notes?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Authentication & RBAC Contracts
+// ---------------------------------------------------------------------------
+export type UserRole = "PASSENGER" | "DRIVER" | "ADMIN" | "SUPER_ADMIN";
+
+export interface AuthUser {
+  user_id: string;
+  phone: string;
+  email: string | null;
+  full_name: string;
+  avatar_url: string | null;
+  is_active: boolean;
+  is_driver: boolean;
+  is_passenger: boolean;
+  is_admin: boolean;
+  is_suspended: boolean;
+  driver_verified: boolean;
+}
+
+export interface AuthTokenResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  user: AuthUser;
+}
+
+export interface RequestOtpPayload {
+  phone: string;
+}
+
+export interface VerifyOtpPayload {
+  phone: string;
+  otp: string;
+  full_name?: string;
+}
+
+

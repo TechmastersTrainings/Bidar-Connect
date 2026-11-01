@@ -61,3 +61,4 @@ async def get_transactional_db() -> AsyncGenerator[AsyncSession, None]:
             except Exception:
                 await session.rollback()
                 raise
+

@@ -29,3 +29,4 @@ class PricingService:
             "commission_per_seat": commission_per_seat,
             "commission_rule_id": commission_rule_id
         }
+

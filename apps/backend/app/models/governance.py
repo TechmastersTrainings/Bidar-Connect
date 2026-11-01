@@ -40,3 +40,4 @@ class AuditLog(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     entity_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
     ip_address: Mapped[Optional[str]] = mapped_column(String(45), nullable=True)
     changes_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+

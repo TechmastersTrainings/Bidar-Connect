@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = Field(default="change-me-to-a-secure-random-64-character-key")
     ALLOWED_ORIGINS: str = Field(default="http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:3003")
     
-    # Database
-    DATABASE_URL: str = Field(default="postgresql+asyncpg://postgres:postgres@localhost:5432/bidar_connect")
+    # Database (PostgreSQL in production; SQLite for local sandbox development)
+    DATABASE_URL: str = Field(default=os.getenv("DATABASE_URL", "sqlite+aiosqlite:////tmp/bidar_connect.db"))
     DATABASE_POOL_SIZE: int = 20
     DATABASE_MAX_OVERFLOW: int = 10
     

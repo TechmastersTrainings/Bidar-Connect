@@ -246,3 +246,4 @@ erDiagram
   - `booking_id`: UUID (FK `bookings.id`, Nullable)
   - `payout_id`: UUID (FK `driver_payouts.id`, Nullable)
   - `recorded_at`: TIMESTAMPTZ (Default `NOW()`)
+

@@ -39,3 +39,4 @@ class BookingService:
             commission_rule_id=pricing["commission_rule_id"],
             idempotency_key=idempotency_key
         )
+

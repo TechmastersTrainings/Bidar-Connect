@@ -49,3 +49,4 @@ class RoutePrice(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
     route: Mapped["Route"] = relationship("Route", back_populates="prices")
+

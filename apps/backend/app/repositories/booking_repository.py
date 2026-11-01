@@ -106,3 +106,4 @@ class BookingRepository(BaseRepository[Booking]):
         await session.flush()
 
         return booking
+

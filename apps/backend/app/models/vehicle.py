@@ -46,3 +46,4 @@ class VehicleImage(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     cloudinary_public_id: Mapped[str] = mapped_column(String(255), nullable=False)
 
     vehicle: Mapped["Vehicle"] = relationship("Vehicle", back_populates="images")
+

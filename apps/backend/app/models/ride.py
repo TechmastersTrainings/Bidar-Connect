@@ -56,3 +56,4 @@ class RideSeatInventory(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     version_lock: Mapped[int] = mapped_column(Integer, default=1, nullable=False)
 
     ride: Mapped["Ride"] = relationship("Ride", back_populates="seat_inventory")
+

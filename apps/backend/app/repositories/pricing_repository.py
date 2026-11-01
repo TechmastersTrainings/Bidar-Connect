@@ -32,3 +32,4 @@ class PricingRepository(BaseRepository[RoutePrice]):
         stmt = select(CommissionRule).where(CommissionRule.is_active == True).limit(1)
         result = await session.execute(stmt)
         return result.scalars().first()
+
