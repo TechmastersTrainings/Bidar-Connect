@@ -1,0 +1,13 @@
+{
+  "name": "@bidar-connect/design-system",
+  "version": "1.0.0",
+  "private": true,
+  "main": "tailwind.preset.js",
+  "files": [
+    "tokens.json",
+    "tailwind.preset.js"
+  ],
+  "dependencies": {
+    "lucide-react": "^0.359.0"
+  }
+}

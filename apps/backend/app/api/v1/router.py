@@ -10,3 +10,4 @@ api_v1_router.include_router(health_router)
 api_v1_router.include_router(pricing_router)
 api_v1_router.include_router(rides_router)
 api_v1_router.include_router(bookings_router)
+

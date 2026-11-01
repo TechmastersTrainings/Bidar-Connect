@@ -51,3 +51,4 @@ class ApiResponse(BaseModel, Generic[T]):
             error=ErrorDetail(code=code, message=message, field=field, details=details),
             metadata=meta,
         )
+

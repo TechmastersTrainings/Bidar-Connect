@@ -101,3 +101,4 @@ async def get_booking_details(booking_id: str):
     if not booking:
         raise HTTPException(status_code=404, detail="Booking reference not found.")
     return ApiResponse.ok(data=booking)
+

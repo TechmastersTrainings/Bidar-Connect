@@ -80,3 +80,4 @@ async def list_route_pricing():
 async def get_active_commission_rule():
     """Returns current active platform commission rule."""
     return ApiResponse.ok(data=ACTIVE_COMMISSION_RULE)
+

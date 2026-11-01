@@ -173,3 +173,4 @@ async def publish_ride(payload: PublishRideRequest):
     }
     SAMPLE_RIDES.append(new_ride)
     return ApiResponse.ok(data=new_ride)
+

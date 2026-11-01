@@ -22,3 +22,4 @@ async def health_check():
             "corridor": "Bidar ⇄ Hyderabad (NH 65)",
         }
     )
+
