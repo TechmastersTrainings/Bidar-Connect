@@ -15,3 +15,4 @@ Component 2 of the Bidar Connect ecosystem.
 - Next.js (App Router)
 - React, TypeScript, Tailwind CSS
 - Lucide React
+

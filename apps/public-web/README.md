@@ -15,3 +15,4 @@ Component 1 of the Bidar Connect ecosystem.
 - React, TypeScript
 - Tailwind CSS
 - Lucide React
+

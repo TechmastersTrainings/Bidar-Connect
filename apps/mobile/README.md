@@ -12,3 +12,4 @@ Component 5 of the Bidar Connect ecosystem.
 - React Native
 - Expo
 - TypeScript
+

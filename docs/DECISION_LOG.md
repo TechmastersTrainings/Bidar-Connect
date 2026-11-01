@@ -10,3 +10,4 @@
 | **DEC-006** | 2026-11-01 | Driver Payout Timing | Configurable post-trip window | OPEN | 5-minute initial working target, subject to banking provider & anti-fraud safeguards. |
 | **DEC-007** | 2026-11-01 | Mobile App Packaging | Single Unified Mobile App vs Two Separate Apps | OPEN | Recommended: Single unified React Native/Expo app with passenger & driver mode switcher. |
 | **DEC-008** | 2026-11-01 | Payment Gateway Selection | Razorpay / Cashfree evaluation | OPEN | Evaluation of marketplace split vs manual settlement required in Phase 10. |
+

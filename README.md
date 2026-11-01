@@ -59,3 +59,4 @@ bidar-connect/
 ## Development & Phase Governance
 
 Bidar Connect follows a strict 17-phase gated lifecycle (**Phase 0 to Phase 16**). No phase is bypassed. All progress, decisions, and verification proofs are documented under `docs/`.
+

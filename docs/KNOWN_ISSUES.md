@@ -14,3 +14,4 @@
 | **RSK-002** | Security | Exposure of driving licences or RC identity documents. | High | Use Cloudinary authenticated/private delivery mode with time-bounded signed download URLs generated server-side. |
 | **RSK-003** | Operations | Fake payment screenshots claimed by driver. | High | Decouple driver claims from financial verification. Only verified gateway webhooks or reconciled ledger entries mark payment verified. |
 | **RSK-004** | Legal | Regional transport department (RTO) carpooling compliance in Karnataka & Telangana. | High | Ensure ride pricing conforms strictly to cost-sharing models rather than commercial taxi operations; document non-commercial nature. |
+
