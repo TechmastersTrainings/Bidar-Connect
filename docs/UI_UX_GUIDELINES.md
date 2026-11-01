@@ -268,3 +268,4 @@ All colors adhere to **WCAG 2.1 AA** accessibility contrast standards (minimum 4
 │ [Search]  [Trips]  [Inbox] [Me] │
 └─────────────────────────────────┘
 ```
+

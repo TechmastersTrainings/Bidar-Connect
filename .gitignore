@@ -30,6 +30,7 @@ wheels/
 # Next.js
 .next/
 out/
+_old_node_modules/
 
 # Expo & React Native
 .expo/
