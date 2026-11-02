@@ -202,4 +202,124 @@ export interface VerifyOtpPayload {
   full_name?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 7: Driver Portal Contracts
+// ---------------------------------------------------------------------------
+export type DriverKYCStatus = "UNREGISTERED" | "PENDING" | "VERIFIED" | "REJECTED";
+export type RideLifecycleStatus = "SCHEDULED" | "EN_ROUTE" | "TRIP_STARTED" | "ARRIVED" | "COMPLETED" | "CANCELLED";
+
+export interface DriverProfileData {
+  user_id: string;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  avatar_url: string | null;
+  is_verified: boolean;
+  licence_number: string | null;
+  licence_expiry: string | null;
+  total_completed_trips: number;
+  average_rating: number;
+  payout_bank_account: string | null;
+  payout_ifsc: string | null;
+  payout_upi_id: string | null;
+}
+
+export interface DriverOnboardPayload {
+  licence_number: string;
+  licence_expiry: string;
+  licence_document_id?: string;
+}
+
+export interface PayoutSettingsPayload {
+  payout_upi_id?: string;
+  payout_bank_account?: string;
+  payout_ifsc?: string;
+}
+
+export interface VehicleRegisterPayload {
+  make: string;
+  model: string;
+  registration_number: string;
+  color: string;
+  year: number;
+  fuel_type: "PETROL" | "DIESEL" | "CNG" | "EV";
+  passenger_capacity: number;
+}
+
+export interface VehicleData extends VehicleSummary {
+  year: number;
+  passenger_capacity: number;
+  is_active: boolean;
+  is_verified: boolean;
+  rc_expiry?: string;
+  insurance_expiry?: string;
+}
+
+export interface PassengerManifestItem {
+  booking_id: string;
+  reference_code: string;
+  passenger_name: string;
+  passenger_phone: string;
+  seats_booked: number;
+  pickup_point: string;
+  drop_point: string;
+  fare_amount: number;
+  booking_status: BookingStatus;
+  emergency_contact?: {
+    name: string;
+    relationship: string;
+    phone: string;
+  } | null;
+}
+
+export interface RideManifestData {
+  ride_id: string;
+  status: RideLifecycleStatus;
+  origin_city: string;
+  destination_city: string;
+  departure_time: string;
+  pickup_point: string;
+  drop_point: string;
+  total_offered_seats: number;
+  available_seats: number;
+  booked_seats: number;
+  fare_per_seat: number;
+  manifest: PassengerManifestItem[];
+}
+
+export interface DriverRideData {
+  ride_id: string;
+  origin_city: string;
+  destination_city: string;
+  departure_time: string;
+  pickup_point: string;
+  drop_point: string;
+  available_seats: number;
+  total_offered_seats: number;
+  fare_per_seat: number;
+  status: RideLifecycleStatus;
+  vehicle: VehicleSummary;
+  notes: string | null;
+  total_confirmed_passengers: number;
+  estimated_gross_earnings: number;
+}
+
+export interface DriverEarningsSummary {
+  total_completed_trips: number;
+  total_gross_earnings: number;
+  total_platform_commission: number;
+  total_net_payout: number;
+  pending_payout_amount: number;
+  recent_payouts: Array<{
+    payout_id: string;
+    ride_id: string;
+    gross_amount: number;
+    commission_deducted: number;
+    net_amount: number;
+    status: string;
+    paid_at: string | null;
+  }>;
+}
+
+
 

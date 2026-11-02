@@ -1,8 +1,8 @@
 # Bidar Connect — Project Status & Phase Tracker
 
-Last Updated: 2026-11-01  
-Current Phase: Phase 6 (Passenger Portal)  
-Current Status: **PHASE 6 COMPLETE — PASSENGER PORTAL, DIGITAL RIDE PASS, SOS EMERGENCY CONTACTS & ANTI-IDOR VERIFIED**
+Last Updated: 2026-11-02  
+Current Phase: Phase 7 (Driver Portal)  
+Current Status: **PHASE 7 COMPLETE — DRIVER PORTAL, FLEET MANAGEMENT, ADMIN-LOCKED CORRIDOR FARES, PASSENGER MANIFESTS & SETTLEMENTS VERIFIED**
 
 ---
 
@@ -17,8 +17,8 @@ Current Status: **PHASE 6 COMPLETE — PASSENGER PORTAL, DIGITAL RIDE PASS, SOS 
 | **Phase 4** | Database Architecture & Backend Foundation | **VERIFIED** | 25 PostgreSQL tables, SQLAlchemy 2.x declarative models, Alembic migrations, atomic seat reservation with `with_for_update()`, 13/13 passing automated tests (`4fd0ccc`) |
 | **Phase 5** | Authentication & Authorisation | **VERIFIED** | Cryptographic HS256 JWT tokens, phone OTP login/auto-registration, server-enforced RBAC (`require_roles`, `require_verified_driver`, `require_admin`), suspension checks, Next.js AuthContext & AuthModal (`4bc8818`, `c4eb6c0`) |
 | **Phase 6** | Passenger Portal | **VERIFIED** | Full search & corridor ride selection (Bidar ⇄ Hyderabad), atomic seat booking, digital ride pass with reference code, My Bookings tabbed history, safety preferences & SOS emergency contacts, 26/26 passing automated tests |
-| **Phase 7** | Driver Portal | **NOT STARTED** | Next Phase: Driver KYC upload, vehicle verification, ride publishing, passenger manifests |
-| **Phase 8** | Ride Search & Booking Engine | **NOT STARTED** | Requires Phase 7 approval |
+| **Phase 7** | Driver Portal | **VERIFIED** | Driver KYC onboarding, vehicle fleet management, ride publishing with fixed ₹310 pricing invariant, live passenger manifests with one-click call, trip lifecycle state transitions, direct payout configuration, 33/33 passing automated tests |
+| **Phase 8** | Ride Search & Booking Engine | **NOT STARTED** | Next Phase: Deep corridor filtering, instant seat holds, cancellation calculator |
 | **Phase 9** | Admin Portal | **NOT STARTED** | Requires Phase 8 approval |
 | **Phase 10** | Payment, Commission & Payout System | **NOT STARTED** | Requires Phase 9 approval |
 | **Phase 11** | Notifications & External Integrations | **NOT STARTED** | Requires Phase 10 approval |
@@ -27,6 +27,34 @@ Current Status: **PHASE 6 COMPLETE — PASSENGER PORTAL, DIGITAL RIDE PASS, SOS 
 | **Phase 14** | Full Security, Legal & Quality Audit | **NOT STARTED** | Requires Phase 13 approval |
 | **Phase 15** | Deployment & Production Launch | **NOT STARTED** | Requires Phase 14 approval |
 | **Phase 16** | Post-Launch Monitoring & Expansion | **NOT STARTED** | Requires Phase 15 approval |
+
+---
+
+## Detailed Task Tracker (Phase 7 Deliverables)
+
+- [x] **Task 7.1:** Shared Driver Contracts (`packages/shared-types/src/index.ts`):
+  - Added `DriverKYCStatus`, `RideLifecycleStatus`, `DriverProfileData`, `DriverOnboardPayload`, `PayoutSettingsPayload`, `VehicleRegisterPayload`, `VehicleData`, `PassengerManifestItem`, `RideManifestData`, `DriverRideData`, `DriverEarningsSummary`. Status: `VERIFIED`.
+- [x] **Task 7.2:** Backend Driver API & Invariant Enforcement (`apps/backend/app/api/v1/driver.py`):
+  - `GET /api/v1/driver/profile`: Retrieves driver profile, ratings, vehicle count, KYC status, and payout details.
+  - `POST /api/v1/driver/onboard`: Verifies licence validity (future expiry) and registers driver partner.
+  - `PUT /api/v1/driver/payout-settings`: Configures UPI ID or bank account/IFSC for automatic trip clearing.
+  - `GET /api/v1/driver/vehicles`: Returns list of registered fleet vehicles.
+  - `POST /api/v1/driver/vehicles`: Registers vehicle with fuel type, registration number, and seat capacity. Prevents duplicate registrations with 409 Conflict.
+  - `GET /api/v1/driver/rides`: Lists driver's published rides with passenger counts and gross earnings estimates.
+  - `POST /api/v1/driver/rides`: Publishes corridor ride between Bidar and Hyderabad with admin-controlled fixed ₹310 fare per seat.
+  - `GET /api/v1/driver/rides/{id}/manifest`: Returns live passenger manifest with Anti-IDOR security (prohibits Driver B from viewing Driver A's manifest).
+  - `POST /api/v1/driver/rides/{id}/status`: Advances journey lifecycle (`SCHEDULED` -> `EN_ROUTE` -> `TRIP_STARTED` -> `ARRIVED` -> `COMPLETED`, `CANCELLED`). Increments driver completed trip count upon completion.
+  - `GET /api/v1/driver/earnings`: Aggregates gross fares, company commission (₹20/seat), net payable balance, and disbursement ledger. Status: `VERIFIED`.
+- [x] **Task 7.3:** Driver Web Portal Frontend (`apps/driver-web`):
+  - Full Next.js 14 App Router application on Port 3002.
+  - Tabs: Overview Dashboard, Publish Ride Wizard, My Rides & Manifests, Fleet & Vehicles, KYC & Licence, and Earnings & Settlements.
+  - Live Passenger Manifest modal with click-to-call passenger button and emergency contact display.
+  - Journey lifecycle transition stepper (`Scheduled` -> `Driver En Route` -> `Trip Started` -> `Completed`).
+  - AuthModal with dedicated "Partner Registration" and "Driver Sign In" tabs, test OTP auto-fill (Universal code: 123456).
+  - Harmonized brand aesthetic: Royal Blue (`#2563EB`) and Slate Navy (`#0F172A`) palette, zero emojis, 100% Lucide React icons. Status: `VERIFIED`.
+- [x] **Task 7.4:** Automated Test Verification (`apps/backend/tests/test_driver_api.py`):
+  - 7 comprehensive automated tests covering driver onboarding, expired licence rejection, payout settings, vehicle fleet registration, duplicate prevention, fixed fare snapshot invariant, passenger manifest Anti-IDOR, journey status lifecycle, and earnings aggregation.
+  - Total test suite: **33/33 tests passing in 1.338s**. Status: `VERIFIED`.
 
 ---
 
