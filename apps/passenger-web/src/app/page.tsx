@@ -118,11 +118,14 @@ export default function PassengerPortal() {
   const [activeTab, setActiveTab] = useState<"SEARCH" | "MY_BOOKINGS" | "PROFILE">("SEARCH");
   const [authModalOpen, setAuthModalOpen] = useState(false);
 
-  // Search state
+  // Search state & Multi-criteria filters
   const [origin, setOrigin] = useState("Bidar");
   const [destination, setDestination] = useState("Hyderabad");
   const [seats, setSeats] = useState(1);
   const [travelDate, setTravelDate] = useState("2026-11-05");
+  const [timeWindow, setTimeWindow] = useState<"ALL" | "MORNING" | "AFTERNOON" | "EVENING">("ALL");
+  const [fuelType, setFuelType] = useState<"ALL" | "EV" | "DIESEL" | "CNG" | "PETROL">("ALL");
+  const [sortBy, setSortBy] = useState<"departure_asc" | "rating_desc" | "price_asc">("departure_asc");
   const [rides, setRides] = useState<Ride[]>([]);
   const [loadingRides, setLoadingRides] = useState(false);
 
@@ -132,6 +135,18 @@ export default function PassengerPortal() {
   const [bookingLoading, setBookingLoading] = useState(false);
   const [pickupLandmark, setPickupLandmark] = useState("");
   const [dropLandmark, setDropLandmark] = useState("");
+
+  // 10-Minute Hold State
+  const [activeHold, setActiveHold] = useState<any | null>(null);
+  const [holdModalOpen, setHoldModalOpen] = useState(false);
+  const [holdSecondsRemaining, setHoldSecondsRemaining] = useState(600);
+  const [confirmingHold, setConfirmingHold] = useState(false);
+
+  // Cancellation Quote & Modal State
+  const [cancellationQuote, setCancellationQuote] = useState<any | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
+  const [cancellingLoading, setCancellingLoading] = useState(false);
 
   // Digital Ticket Pass State
   const [activeTicket, setActiveTicket] = useState<BookingRecord | null>(null);
@@ -153,13 +168,16 @@ export default function PassengerPortal() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileFeedback, setProfileFeedback] = useState<string | null>(null);
 
-  // Fetch Rides
+  // Fetch Rides with Multi-Criteria Filters
   const fetchRides = async () => {
     setLoadingRides(true);
     try {
-      const res = await fetch(
-        `${API_BASE}/api/v1/rides/search?origin_city=${encodeURIComponent(origin)}&destination_city=${encodeURIComponent(destination)}&seats=${seats}`
-      );
+      let url = `${API_BASE}/api/v1/rides/search?origin_city=${encodeURIComponent(origin)}&destination_city=${encodeURIComponent(destination)}&seats=${seats}&sort_by=${sortBy}`;
+      if (timeWindow !== "ALL") url += `&time_window=${timeWindow}`;
+      if (fuelType !== "ALL") url += `&fuel_type=${fuelType}`;
+      if (travelDate) url += `&travel_date=${encodeURIComponent(travelDate)}`;
+
+      const res = await fetch(url);
       const data = await res.json();
       if (data.success) {
         setRides(data.data);
@@ -176,7 +194,26 @@ export default function PassengerPortal() {
 
   useEffect(() => {
     fetchRides();
-  }, [origin, destination]);
+  }, [origin, destination, seats, timeWindow, fuelType, sortBy, travelDate]);
+
+  // Hold Countdown Timer effect
+  useEffect(() => {
+    if (!holdModalOpen || !activeHold) return;
+    const interval = setInterval(() => {
+      setHoldSecondsRemaining((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setHoldModalOpen(false);
+          setActiveHold(null);
+          alert("Seat hold has expired. The seat inventory has been released back to other travelers.");
+          fetchRides();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [holdModalOpen, activeHold]);
 
   // Fetch Bookings when tab changes to MY_BOOKINGS
   const fetchMyBookings = async () => {
@@ -239,29 +276,59 @@ export default function PassengerPortal() {
     setBookingModalOpen(true);
   };
 
-  // Confirm and Submit Booking
+  // Acquire 10-Minute Hold Reservation
   const handleConfirmBooking = async () => {
     if (!selectedRide || !token) return;
     setBookingLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/api/v1/bookings/initiate`, {
+      const res = await fetch(`${API_BASE}/api/v1/bookings/hold`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          "Idempotency-Key": `idem_${selectedRide.ride_id}_${user?.id}_${Date.now()}`,
         },
         body: JSON.stringify({
           ride_id: selectedRide.ride_id,
-          passenger_name: user?.full_name || "Passenger",
-          passenger_phone: user?.phone || "+919876543210",
           requested_seats: seats,
           pickup_point: pickupLandmark,
           drop_point: dropLandmark,
+          passenger_name: user?.full_name || "Passenger",
+          passenger_phone: user?.phone || "+919876543210",
         }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setBookingModalOpen(false);
+        setActiveHold(data.data);
+        setHoldSecondsRemaining(data.data.seconds_remaining || 600);
+        setHoldModalOpen(true);
+        fetchRides();
+      } else {
+        alert(data.error?.message || "Seat hold failed. Seats may have just been claimed.");
+      }
+    } catch (e) {
+      alert("Network error connecting to hold engine.");
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  // Confirm Held Booking
+  const handleConfirmHeldBooking = async () => {
+    if (!activeHold || !token) return;
+    setConfirmingHold(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/bookings/hold/${activeHold.hold_id}/confirm`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setHoldModalOpen(false);
+        setActiveHold(null);
         setActiveTicket(data.data);
         setTicketModalOpen(true);
         fetchRides();
@@ -269,22 +336,41 @@ export default function PassengerPortal() {
           fetchMyBookings();
         }
       } else {
-        alert(data.error?.message || "Booking failed.");
+        alert(data.error?.message || "Failed to confirm booking.");
       }
     } catch (e) {
-      alert("Network error connecting to booking engine.");
+      alert("Network error confirming reservation.");
     } finally {
-      setBookingLoading(false);
+      setConfirmingHold(false);
     }
   };
 
-  // Cancel Booking
-  const handleCancelBooking = async (bookingId: string) => {
-    if (!confirm("Are you sure you want to cancel this booking? Full fare will be refunded according to corridor policies.")) {
-      return;
-    }
+  // Request Tiered Cancellation Quote
+  const handleRequestCancelQuote = async (bookingId: string) => {
+    if (!token) return;
     try {
-      const res = await fetch(`${API_BASE}/api/v1/bookings/${bookingId}/cancel`, {
+      const res = await fetch(`${API_BASE}/api/v1/bookings/${bookingId}/cancellation-quote`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        setCancellationQuote(data.data);
+        setCancellingBookingId(bookingId);
+        setCancelModalOpen(true);
+      } else {
+        alert(data.error?.message || "Could not retrieve cancellation quote.");
+      }
+    } catch (e) {
+      alert("Network error retrieving cancellation quote.");
+    }
+  };
+
+  // Execute Tiered Cancellation
+  const handleExecuteTieredCancel = async () => {
+    if (!cancellingBookingId || !token) return;
+    setCancellingLoading(true);
+    try {
+      const res = await fetch(`${API_BASE}/api/v1/bookings/${cancellingBookingId}/cancel`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -296,17 +382,20 @@ export default function PassengerPortal() {
       });
       const data = await res.json();
       if (data.success) {
-        if (activeTicket && activeTicket.booking_id === bookingId) {
+        setCancelModalOpen(false);
+        if (activeTicket && activeTicket.booking_id === cancellingBookingId) {
           setActiveTicket(data.data);
         }
         fetchMyBookings();
         fetchRides();
-        alert("Booking cancelled successfully. Refund processed to original payment method.");
+        alert(`Booking cancelled. Refund of ₹${data.data.refund_amount} processed according to corridor policy.`);
       } else {
         alert(data.error?.message || "Failed to cancel booking.");
       }
     } catch (e) {
-      alert("Error cancelling booking.");
+      alert("Error executing cancellation.");
+    } finally {
+      setCancellingLoading(false);
     }
   };
 
@@ -562,6 +651,70 @@ export default function PassengerPortal() {
                   </button>
                 </div>
               </div>
+
+              {/* Multi-Criteria Engine Filters */}
+              <div className="pt-4 mt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                {/* Time Window Filter */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Time:</span>
+                  {[
+                    { id: "ALL", label: "All Day" },
+                    { id: "MORNING", label: "Morning (5AM - 12PM)" },
+                    { id: "AFTERNOON", label: "Afternoon (12PM - 5PM)" },
+                    { id: "EVENING", label: "Evening (5PM - 12AM)" },
+                  ].map((tw) => (
+                    <button
+                      key={tw.id}
+                      onClick={() => setTimeWindow(tw.id as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        timeWindow === tw.id
+                          ? "bg-blue-600 text-white shadow-2xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {tw.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Fuel & Vehicle Filter */}
+                <div className="flex items-center space-x-1.5 overflow-x-auto">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Vehicle:</span>
+                  {[
+                    { id: "ALL", label: "All" },
+                    { id: "EV", label: "Electric (EV)" },
+                    { id: "DIESEL", label: "Diesel" },
+                    { id: "CNG", label: "CNG" },
+                    { id: "PETROL", label: "Petrol" },
+                  ].map((ft) => (
+                    <button
+                      key={ft.id}
+                      onClick={() => setFuelType(ft.id as any)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                        fuelType === ft.id
+                          ? "bg-blue-600 text-white shadow-2xs"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {ft.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Sort Selector */}
+                <div className="flex items-center space-x-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Sort:</span>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value as any)}
+                    className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 outline-none"
+                  >
+                    <option value="departure_asc">Earliest Departure</option>
+                    <option value="rating_desc">Highest Driver Rating</option>
+                    <option value="price_asc">Price: Low to High</option>
+                  </select>
+                </div>
+              </div>
             </div>
 
             {/* Results Header */}
@@ -778,7 +931,7 @@ export default function PassengerPortal() {
                           <span>View Ticket</span>
                         </button>
                         <button
-                          onClick={() => handleCancelBooking(bkg.booking_id)}
+                          onClick={() => handleRequestCancelQuote(bkg.booking_id)}
                           className="px-3 py-2 bg-white hover:bg-red-50 text-red-600 border border-slate-200 hover:border-red-200 rounded-xl text-xs font-semibold transition-colors"
                         >
                           Cancel
@@ -1186,7 +1339,7 @@ export default function PassengerPortal() {
 
               {activeTicket.booking_status !== "CANCELLED" && (
                 <button
-                  onClick={() => handleCancelBooking(activeTicket.booking_id)}
+                  onClick={() => handleRequestCancelQuote(activeTicket.booking_id)}
                   className="w-full py-2 bg-white hover:bg-red-50 text-red-600 border border-slate-200 hover:border-red-200 rounded-xl text-xs font-bold transition-colors"
                 >
                   Cancel Booking & Request Refund
@@ -1199,6 +1352,177 @@ export default function PassengerPortal() {
               >
                 Close Ticket
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 3: 10-MINUTE SEAT HOLD COUNTDOWN MODAL                              */}
+      {/* ========================================================================= */}
+      {holdModalOpen && activeHold && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+                  <Clock className="w-5 h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Seats Temporarily Reserved</h3>
+                  <p className="text-xs text-slate-400">10-Minute Checkout Window</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setHoldModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Countdown Display Card */}
+              <div className="bg-blue-50/70 border border-blue-200 rounded-2xl p-4 text-center">
+                <span className="text-[11px] font-bold text-blue-700 uppercase tracking-wider block">Time Remaining to Complete</span>
+                <div className="text-3xl font-black font-mono text-blue-900 my-1">
+                  {Math.floor(holdSecondsRemaining / 60).toString().padStart(2, "0")}:
+                  {(holdSecondsRemaining % 60).toString().padStart(2, "0")}
+                </div>
+                <p className="text-[11px] text-blue-800 font-medium">
+                  Your {activeHold.seats_held} seat(s) are locked exclusively for you.
+                </p>
+              </div>
+
+              {/* Route Summary */}
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Route:</span>
+                  <span className="font-bold text-slate-800">{activeHold.route_summary.origin} → {activeHold.route_summary.destination}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Pickup Landmark:</span>
+                  <span className="font-semibold text-slate-800">{activeHold.route_summary.pickup_point}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Seats Reserved:</span>
+                  <span className="font-bold text-blue-700">{activeHold.seats_held} seat(s)</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-slate-200">
+                  <span className="font-bold text-slate-800">Total Payable:</span>
+                  <span className="font-black text-slate-900 text-sm">₹{activeHold.total_fare}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <button
+                onClick={handleConfirmHeldBooking}
+                disabled={confirmingHold}
+                className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center space-x-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>{confirmingHold ? "Generating Boarding Pass..." : `Confirm & Issue Pass (₹${activeHold.total_fare})`}</span>
+              </button>
+
+              <button
+                onClick={() => setHoldModalOpen(false)}
+                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
+              >
+                Keep Browsing (Hold active in background)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL 4: TIERED CANCELLATION QUOTE MODAL (RULE BR-REF-01)                 */}
+      {/* ========================================================================= */}
+      {cancelModalOpen && cancellationQuote && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-amber-500/20 text-amber-400 rounded-xl border border-amber-500/30">
+                  <AlertTriangle className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Cancellation & Refund Review</h3>
+                  <p className="text-xs text-slate-400">Official Policy: Rule BR-REF-01</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setCancelModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {/* Policy Explanation Banner */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Departure Countdown:</span>
+                  <span className="font-bold text-slate-800 text-xs">
+                    {cancellationQuote.hours_until_departure > 0
+                      ? `${cancellationQuote.hours_until_departure} hours before departure`
+                      : "Trip already departed"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-slate-500">Refund Eligibility Tier:</span>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      cancellationQuote.cancellation_tier === "FULL_REFUND"
+                        ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                        : cancellationQuote.cancellation_tier === "PARTIAL_REFUND"
+                        ? "bg-amber-50 text-amber-800 border border-amber-200"
+                        : "bg-red-50 text-red-800 border border-red-200"
+                    }`}
+                  >
+                    {cancellationQuote.cancellation_tier} ({cancellationQuote.refund_percentage}%)
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 pt-1 border-t border-slate-200">
+                  {cancellationQuote.explanation}
+                </p>
+              </div>
+
+              {/* Financial Breakdown */}
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between text-slate-500">
+                  <span>Original Paid Fare:</span>
+                  <span className="font-semibold text-slate-800">₹{cancellationQuote.total_fare_paid}</span>
+                </div>
+                <div className="flex justify-between text-slate-500">
+                  <span>Deduction (Driver Inconvenience Fee):</span>
+                  <span className="font-semibold text-red-600">-₹{cancellationQuote.deduction_amount}</span>
+                </div>
+                <div className="flex justify-between font-bold text-sm text-slate-900 pt-2 border-t border-slate-100">
+                  <span>Estimated Refund to Original Method:</span>
+                  <span className="text-emerald-700">₹{cancellationQuote.refund_amount}</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2 pt-2">
+                <button
+                  onClick={handleExecuteTieredCancel}
+                  disabled={cancellingLoading}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-sm transition-all"
+                >
+                  {cancellingLoading ? "Processing Cancellation..." : `Confirm Cancellation (Refund: ₹${cancellationQuote.refund_amount})`}
+                </button>
+                <button
+                  onClick={() => setCancelModalOpen(false)}
+                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors"
+                >
+                  Keep My Reservation
+                </button>
+              </div>
             </div>
           </div>
         </div>

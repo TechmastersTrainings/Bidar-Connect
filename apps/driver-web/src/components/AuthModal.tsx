@@ -318,3 +318,4 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
     </div>
   );
 }
+

@@ -321,5 +321,62 @@ export interface DriverEarningsSummary {
   }>;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 8: Ride Search & Booking Engine Contracts
+// ---------------------------------------------------------------------------
+export type TimeWindow = "ALL" | "MORNING" | "AFTERNOON" | "EVENING";
+export type SortByOption = "DEPARTURE_ASC" | "RATING_DESC" | "PRICE_ASC";
+
+export interface ExtendedRideSearchParams {
+  origin_city: string;
+  destination_city: string;
+  travel_date?: string;
+  seats?: number;
+  time_window?: TimeWindow;
+  fuel_type?: string;
+  pickup_point?: string;
+  drop_point?: string;
+  sort_by?: SortByOption;
+}
+
+export interface HoldSeatPayload {
+  ride_id: string;
+  requested_seats: number;
+  pickup_point: string;
+  drop_point: string;
+  passenger_name: string;
+  passenger_phone: string;
+}
+
+export interface HoldSeatResponse {
+  hold_id: string;
+  ride_id: string;
+  seats_held: number;
+  fare_per_seat: number;
+  total_fare: number;
+  reserved_until: string;
+  seconds_remaining: number;
+  route_summary: {
+    origin: string;
+    destination: string;
+    departure_time: string;
+    pickup_point: string;
+    drop_point: string;
+  };
+}
+
+export interface CancellationQuoteResponse {
+  booking_id: string;
+  reference_code: string;
+  total_fare_paid: number;
+  hours_until_departure: number;
+  refund_percentage: number;
+  refund_amount: number;
+  deduction_amount: number;
+  cancellation_tier: "FULL_REFUND" | "PARTIAL_REFUND" | "NO_REFUND";
+  explanation: string;
+}
+
+
 
 

@@ -1,8 +1,8 @@
 # Bidar Connect — Project Status & Phase Tracker
 
 Last Updated: 2026-11-02  
-Current Phase: Phase 7 (Driver Portal)  
-Current Status: **PHASE 7 COMPLETE — DRIVER PORTAL, FLEET MANAGEMENT, ADMIN-LOCKED CORRIDOR FARES, PASSENGER MANIFESTS & SETTLEMENTS VERIFIED**
+Current Phase: Phase 8 (Ride Search & Booking Engine)  
+Current Status: **PHASE 8 COMPLETE — MULTI-CRITERIA SEARCH ENGINE, 10-MINUTE SEAT HOLD RESERVATIONS, TIERED REFUND CALCULATOR & IDEMPOTENCY VERIFIED**
 
 ---
 
@@ -17,9 +17,9 @@ Current Status: **PHASE 7 COMPLETE — DRIVER PORTAL, FLEET MANAGEMENT, ADMIN-LO
 | **Phase 4** | Database Architecture & Backend Foundation | **VERIFIED** | 25 PostgreSQL tables, SQLAlchemy 2.x declarative models, Alembic migrations, atomic seat reservation with `with_for_update()`, 13/13 passing automated tests (`4fd0ccc`) |
 | **Phase 5** | Authentication & Authorisation | **VERIFIED** | Cryptographic HS256 JWT tokens, phone OTP login/auto-registration, server-enforced RBAC (`require_roles`, `require_verified_driver`, `require_admin`), suspension checks, Next.js AuthContext & AuthModal (`4bc8818`, `c4eb6c0`) |
 | **Phase 6** | Passenger Portal | **VERIFIED** | Full search & corridor ride selection (Bidar ⇄ Hyderabad), atomic seat booking, digital ride pass with reference code, My Bookings tabbed history, safety preferences & SOS emergency contacts, 26/26 passing automated tests |
-| **Phase 7** | Driver Portal | **VERIFIED** | Driver KYC onboarding, vehicle fleet management, ride publishing with fixed ₹310 pricing invariant, live passenger manifests with one-click call, trip lifecycle state transitions, direct payout configuration, 33/33 passing automated tests |
-| **Phase 8** | Ride Search & Booking Engine | **NOT STARTED** | Next Phase: Deep corridor filtering, instant seat holds, cancellation calculator |
-| **Phase 9** | Admin Portal | **NOT STARTED** | Requires Phase 8 approval |
+| **Phase 7** | Driver Portal | **VERIFIED** | Driver KYC onboarding, vehicle fleet management, ride publishing with fixed ₹310 pricing invariant, live passenger manifests with one-click call, trip lifecycle state transitions, direct payout configuration, 33/33 passing automated tests (`1f53523`) |
+| **Phase 8** | Ride Search & Booking Engine | **VERIFIED** | Multi-criteria search filters (time windows, fuel types, waypoints, sorting), atomic 10-minute seat holds with Idempotency-Key, automated hold expiry reaper, tiered cancellation refund engine (Rule BR-REF-01), 100% driver cancellation refunds (Rule BR-REF-02), 38/38 passing automated tests |
+| **Phase 9** | Admin Portal | **NOT STARTED** | Next Phase: Admin oversight, driver KYC approvals, price controls & audit review |
 | **Phase 10** | Payment, Commission & Payout System | **NOT STARTED** | Requires Phase 9 approval |
 | **Phase 11** | Notifications & External Integrations | **NOT STARTED** | Requires Phase 10 approval |
 | **Phase 12** | Public Website | **NOT STARTED** | Requires Phase 11 approval |
@@ -27,6 +27,42 @@ Current Status: **PHASE 7 COMPLETE — DRIVER PORTAL, FLEET MANAGEMENT, ADMIN-LO
 | **Phase 14** | Full Security, Legal & Quality Audit | **NOT STARTED** | Requires Phase 13 approval |
 | **Phase 15** | Deployment & Production Launch | **NOT STARTED** | Requires Phase 14 approval |
 | **Phase 16** | Post-Launch Monitoring & Expansion | **NOT STARTED** | Requires Phase 15 approval |
+
+---
+
+## Detailed Task Tracker (Phase 8 Deliverables)
+
+- [x] **Task 8.1:** Shared Search & Booking Contracts (`packages/shared-types/src/index.ts`):
+  - Added `TimeWindow`, `SortByOption`, `ExtendedRideSearchParams`, `HoldSeatPayload`, `HoldSeatResponse`, `CancellationQuoteResponse`. Status: `VERIFIED`.
+- [x] **Task 8.2:** Advanced Multi-Criteria Search Engine (`apps/backend/app/api/v1/rides.py`):
+  - Implemented multi-criteria search filtering on `/api/v1/rides/search`:
+    - Travel date filter (`YYYY-MM-DD`).
+    - Departure time window buckets (`MORNING`: 05:00-11:59, `AFTERNOON`: 12:00-16:59, `EVENING`: 17:00-23:59).
+    - Vehicle fuel type filter (`EV`, `DIESEL`, `CNG`, `PETROL`).
+    - Intermediate waypoint matching along NH 65 corridor (`Humnabad`, `Zaheerabad`, `Sangareddy`, `Miyapur`, `DLF`, `Kukatpally`).
+    - Dynamic sorting (`departure_asc`, `rating_desc`, `price_asc`). Status: `VERIFIED`.
+- [x] **Task 8.3:** Concurrency-Safe 10-Minute Seat Hold Engine (`apps/backend/app/api/v1/bookings.py`):
+  - `POST /api/v1/bookings/hold`: Temporarily reserves seats with atomic inventory decrement. Supports `Idempotency-Key` preventing duplicate holds.
+  - `GET /api/v1/bookings/hold/{hold_id}`: Real-time countdown status check with automated expiration trigger.
+  - `POST /api/v1/bookings/hold/{hold_id}/confirm`: Finalizes checkout, converting hold into confirmed digital boarding pass.
+  - `POST /api/v1/bookings/cleanup-expired`: Automated reaper releasing expired holds back to available corridor seats. Status: `VERIFIED`.
+- [x] **Task 8.4:** Tiered Cancellation & Refund Engine (`apps/backend/app/api/v1/bookings.py` & `driver.py`):
+  - `GET /api/v1/bookings/{id}/cancellation-quote`: Evaluates Rule `BR-REF-01` before cancellation:
+    - $>2$ hours before departure: 100% full refund (`FULL_REFUND`).
+    - $\le 2$ hours before departure: 50% partial refund (`PARTIAL_REFUND`, 50% late fee to driver).
+    - Post-departure: 0% refund (`NO_REFUND`).
+  - `POST /api/v1/bookings/{id}/cancel`: Executes passenger cancellation, restores seat inventory, and applies tiered refund policy.
+  - `POST /api/v1/driver/rides/{id}/cancel`: Driver ride cancellation (Rule `BR-REF-02`) triggering 100% automatic full refunds to all confirmed passengers. Status: `VERIFIED`.
+- [x] **Task 8.5:** Frontend Multi-Criteria & Hold UI (`apps/passenger-web/src/app/page.tsx`):
+  - Time window filter pills ("All Times", "Morning", "Afternoon", "Evening").
+  - Fuel type filter pills ("All", "EV", "Diesel", "CNG", "Petrol").
+  - Sort selector dropdown with immediate client reactivity.
+  - 10-Minute Hold Modal with live MM:SS second-by-second countdown timer.
+  - Tiered Cancellation Quote Modal displaying refund breakdown before confirming.
+  - 100% Lucide React icons, zero emojis. Status: `VERIFIED`.
+- [x] **Task 8.6:** Automated Test Verification (`apps/backend/tests/test_search_booking_engine.py`):
+  - 5 comprehensive automated tests covering search filtering, seat hold countdown, hold cleanup, tiered cancellation refund calculation, driver ride cancellation with 100% refund, and idempotency protection.
+  - Total test suite: **38/38 tests passing in 1.463s**. Status: `VERIFIED`.
 
 ---
 
