@@ -375,13 +375,13 @@ export default function PassengerPortal() {
       <header className="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-xs">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-emerald-600 rounded-lg flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-xs">
               <Car className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <span className="font-bold text-slate-900 tracking-tight text-lg">Bidar Connect</span>
-                <span className="text-xs font-semibold px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded-md border border-emerald-200">
+                <span className="text-xs font-semibold px-2 py-0.5 bg-blue-50 text-blue-700 rounded-md border border-blue-200">
                   NH 65 Corridor
                 </span>
               </div>
@@ -395,7 +395,7 @@ export default function PassengerPortal() {
               onClick={() => setActiveTab("SEARCH")}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === "SEARCH"
-                  ? "bg-white text-emerald-700 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -411,7 +411,7 @@ export default function PassengerPortal() {
               }}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === "MY_BOOKINGS"
-                  ? "bg-white text-emerald-700 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -427,7 +427,7 @@ export default function PassengerPortal() {
               }}
               className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 activeTab === "PROFILE"
-                  ? "bg-white text-emerald-700 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -440,7 +440,7 @@ export default function PassengerPortal() {
             {isAuthenticated && user ? (
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2 text-sm text-slate-700 font-medium">
-                  <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs uppercase shadow-xs">
+                  <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs uppercase shadow-xs">
                     {user.full_name ? user.full_name.substring(0, 2) : "PA"}
                   </div>
                   <div className="text-left hidden sm:block">
@@ -458,7 +458,7 @@ export default function PassengerPortal() {
             ) : (
               <button
                 onClick={() => setAuthModalOpen(true)}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5"
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5"
               >
                 <User className="w-3.5 h-3.5" />
                 <span>Sign In / Register</span>
@@ -482,7 +482,7 @@ export default function PassengerPortal() {
                   <h1 className="text-lg font-bold text-slate-900">Book Verified Intercity Carpool</h1>
                   <p className="text-xs text-slate-500">Government-audited corridor pricing: ₹310 per passenger seat</p>
                 </div>
-                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 text-xs font-semibold rounded-full border border-emerald-200">
+                <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-blue-50 text-blue-700 text-xs font-semibold rounded-full border border-blue-200">
                   <Shield className="w-3.5 h-3.5" />
                   <span>Verified Drivers Only</span>
                 </div>
@@ -494,7 +494,7 @@ export default function PassengerPortal() {
                     Departure Origin
                   </label>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 text-emerald-600 absolute left-3.5 top-3" />
+                    <MapPin className="w-4 h-4 text-blue-600 absolute left-3.5 top-3" />
                     <select
                       value={origin}
                       onChange={(e) => {
@@ -502,7 +502,7 @@ export default function PassengerPortal() {
                         setOrigin(newOrigin);
                         setDestination(newOrigin === "Bidar" ? "Hyderabad" : "Bidar");
                       }}
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-colors"
                     >
                       <option value="Bidar">Bidar (New Bus Stand, Mailoor)</option>
                       <option value="Hyderabad">Hyderabad (Miyapur, Gachibowli)</option>
@@ -515,7 +515,7 @@ export default function PassengerPortal() {
                     Destination
                   </label>
                   <div className="relative">
-                    <MapPin className="w-4 h-4 text-teal-600 absolute left-3.5 top-3" />
+                    <MapPin className="w-4 h-4 text-blue-600 absolute left-3.5 top-3" />
                     <select
                       value={destination}
                       onChange={(e) => {
@@ -523,7 +523,7 @@ export default function PassengerPortal() {
                         setDestination(newDest);
                         setOrigin(newDest === "Bidar" ? "Hyderabad" : "Bidar");
                       }}
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-colors"
                     >
                       <option value="Hyderabad">Hyderabad (Miyapur, Gachibowli)</option>
                       <option value="Bidar">Bidar (New Bus Stand, Mailoor)</option>
@@ -540,7 +540,7 @@ export default function PassengerPortal() {
                     <select
                       value={seats}
                       onChange={(e) => setSeats(Number(e.target.value))}
-                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-emerald-500 outline-none transition-colors"
+                      className="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 focus:bg-white focus:border-blue-500 outline-none transition-colors"
                     >
                       {[1, 2, 3, 4].map((s) => (
                         <option key={s} value={s}>
@@ -555,7 +555,7 @@ export default function PassengerPortal() {
                   <button
                     onClick={fetchRides}
                     disabled={loadingRides}
-                    className="w-full h-11 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all"
+                    className="w-full h-11 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-sm hover:shadow transition-all"
                   >
                     <Search className="w-4 h-4" />
                     <span>{loadingRides ? "Searching..." : "Search Corridor"}</span>
@@ -572,7 +572,7 @@ export default function PassengerPortal() {
                 </h2>
                 <p className="text-xs text-slate-500">Route: NH 65 • Distance ~140 km • Approx duration 2 hrs 45 mins</p>
               </div>
-              <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
+              <span className="text-xs font-bold text-blue-800 bg-blue-50 px-3 py-1 rounded-lg border border-blue-200">
                 Fixed ₹310 / Seat
               </span>
             </div>
@@ -591,7 +591,7 @@ export default function PassengerPortal() {
                 {rides.map((ride) => (
                   <div
                     key={ride.ride_id}
-                    className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-emerald-300 hover:shadow-md transition-all"
+                    className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:border-blue-300 hover:shadow-md transition-all"
                   >
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
                       {/* Driver & Departure Details */}
@@ -634,8 +634,9 @@ export default function PassengerPortal() {
 
                           {/* Vehicle Spec */}
                           <div className="mt-2 flex items-center gap-3 text-xs text-slate-500">
-                            <span>
-                              🚗 {ride.vehicle.color} {ride.vehicle.make} {ride.vehicle.model}
+                            <span className="flex items-center gap-1">
+                              <Car className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{ride.vehicle.color} {ride.vehicle.make} {ride.vehicle.model}</span>
                             </span>
                             <span>•</span>
                             <span className="font-mono font-semibold text-slate-700">
@@ -664,7 +665,7 @@ export default function PassengerPortal() {
                           <div className="text-[11px] text-slate-500">
                             ₹{ride.fare_per_seat}/seat • {seats} {seats === 1 ? "seat" : "seats"}
                           </div>
-                          <div className="text-[11px] font-bold text-emerald-700 mt-0.5">
+                          <div className="text-[11px] font-bold text-blue-700 mt-0.5">
                             {ride.available_seats} {ride.available_seats === 1 ? "seat left" : "seats available"}
                           </div>
                         </div>
@@ -672,7 +673,7 @@ export default function PassengerPortal() {
                         <button
                           onClick={() => handleOpenBooking(ride)}
                           disabled={ride.available_seats < seats}
-                          className="mt-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl text-xs shadow-xs hover:shadow transition-all flex items-center gap-1.5"
+                          className="mt-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold rounded-xl text-xs shadow-xs hover:shadow transition-all flex items-center gap-1.5"
                         >
                           <span>Reserve Seats</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -950,9 +951,10 @@ export default function PassengerPortal() {
                       </div>
                     ))
                   ) : (
-                    <p className="text-xs text-amber-700 bg-amber-50 p-3 rounded-xl border border-amber-200">
-                      ⚠️ No emergency contact registered yet. Please add a trusted family member or colleague.
-                    </p>
+                    <div className="text-xs text-amber-800 bg-amber-50 p-3 rounded-xl border border-amber-200 flex items-center gap-2">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>No emergency contact registered yet. Please add a trusted family member or colleague.</span>
+                    </div>
                   )}
                 </div>
 
@@ -1011,16 +1013,16 @@ export default function PassengerPortal() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
           <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5 text-white flex items-center justify-between">
+            <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
               <div>
-                <h3 className="text-base font-bold">Review & Reserve Seats</h3>
-                <p className="text-xs text-emerald-100">
+                <h3 className="text-base font-bold text-white">Review & Reserve Seats</h3>
+                <p className="text-xs text-slate-400">
                   {selectedRide.origin_city} → {selectedRide.destination_city} • 10-Minute Seat Hold
                 </p>
               </div>
               <button
                 onClick={() => setBookingModalOpen(false)}
-                className="p-1 rounded-full text-emerald-100 hover:text-white hover:bg-white/10"
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -1031,7 +1033,13 @@ export default function PassengerPortal() {
               <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 text-xs space-y-2">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Driver:</span>
-                  <span className="font-bold text-slate-800">{selectedRide.driver.name} (★ {selectedRide.driver.rating.toFixed(1)})</span>
+                  <span className="font-bold text-slate-800 inline-flex items-center gap-1">
+                    {selectedRide.driver.name}
+                    <span className="inline-flex items-center text-amber-600 text-xs font-semibold">
+                      <Star className="w-3 h-3 fill-amber-400 text-amber-500 mr-0.5" />
+                      {selectedRide.driver.rating.toFixed(1)}
+                    </span>
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-slate-500">Vehicle:</span>
@@ -1052,7 +1060,7 @@ export default function PassengerPortal() {
                   type="text"
                   value={pickupLandmark}
                   onChange={(e) => setPickupLandmark(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-blue-500 outline-none"
                 />
               </div>
 
@@ -1062,7 +1070,7 @@ export default function PassengerPortal() {
                   type="text"
                   value={dropLandmark}
                   onChange={(e) => setDropLandmark(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-emerald-500 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:border-blue-500 outline-none"
                 />
               </div>
 
@@ -1078,14 +1086,14 @@ export default function PassengerPortal() {
                 </div>
                 <div className="flex justify-between text-sm font-bold text-slate-900 border-t border-slate-100 pt-2">
                   <span>Total Payable</span>
-                  <span className="text-emerald-700">₹{selectedRide.fare_per_seat * seats}</span>
+                  <span className="text-blue-700">₹{selectedRide.fare_per_seat * seats}</span>
                 </div>
               </div>
 
               <button
                 onClick={handleConfirmBooking}
                 disabled={bookingLoading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs shadow-md hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md hover:shadow-lg disabled:opacity-50 transition-all flex items-center justify-center gap-2"
               >
                 <CreditCard className="w-4 h-4" />
                 <span>{bookingLoading ? "Reserving Atomic Lock..." : `Confirm & Pay ₹${selectedRide.fare_per_seat * seats}`}</span>
@@ -1100,20 +1108,20 @@ export default function PassengerPortal() {
       {/* ========================================================================= */}
       {ticketModalOpen && activeTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Ticket Header */}
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-700 p-6 text-white text-center relative">
+            <div className="bg-slate-900 p-6 text-white text-center relative border-b border-slate-800">
               <button
                 onClick={() => setTicketModalOpen(false)}
-                className="absolute right-4 top-4 p-1 rounded-full text-emerald-100 hover:text-white hover:bg-white/10"
+                className="absolute right-4 top-4 p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
-              <div className="w-12 h-12 bg-white/15 rounded-2xl flex items-center justify-center mx-auto mb-2.5">
-                <Ticket className="w-6 h-6 text-white" />
+              <div className="w-12 h-12 bg-blue-600/20 text-blue-400 border border-blue-500/30 rounded-2xl flex items-center justify-center mx-auto mb-2.5">
+                <Ticket className="w-6 h-6" />
               </div>
-              <h3 className="text-base font-black tracking-wide">BIDAR CONNECT RIDE PASS</h3>
-              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 rounded-full font-mono font-bold text-xs">
+              <h3 className="text-base font-black tracking-wide text-white">BIDAR CONNECT RIDE PASS</h3>
+              <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 bg-slate-800 border border-slate-700 rounded-full font-mono font-bold text-xs text-blue-300">
                 <span>{activeTicket.reference_code}</span>
               </div>
             </div>
@@ -1143,7 +1151,7 @@ export default function PassengerPortal() {
                 </div>
                 <div>
                   <span className="text-slate-400 text-[10px] uppercase font-bold">Departure Time</span>
-                  <div className="font-bold text-emerald-800">
+                  <div className="font-bold text-blue-800">
                     {new Date(activeTicket.route.departure_time).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -1163,7 +1171,7 @@ export default function PassengerPortal() {
                 </div>
                 <a
                   href="tel:+919876543210"
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-2xs"
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 shadow-2xs"
                 >
                   <Phone className="w-3 h-3" />
                   <span>Call</span>

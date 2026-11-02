@@ -14,6 +14,7 @@ import {
   UserPlus,
   LogIn,
   CheckCircle,
+  Info,
 } from "lucide-react";
 
 interface AuthModalProps {
@@ -26,7 +27,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
   const { requestOtp, verifyOtp } = useAuth();
   const [mode, setMode] = useState<"LOGIN" | "REGISTER">(initialMode);
   const [step, setStep] = useState<"FORM" | "OTP">("FORM");
-  
+
   // Registration Form State
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
@@ -110,27 +111,27 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-600 to-teal-700 px-6 py-5 text-white flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="p-2 bg-white/15 rounded-xl">
-              <ShieldCheck className="w-5 h-5 text-emerald-200" />
+      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+        {/* Header - Brand Navy */}
+        <div className="bg-slate-900 px-6 py-5 text-white flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-blue-600/20 text-blue-400 rounded-xl border border-blue-500/30">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-base font-bold">
+              <h3 className="text-base font-bold text-white">
                 {step === "OTP"
                   ? "Verify Mobile Number"
                   : mode === "REGISTER"
                   ? "Create Passenger Account"
                   : "Sign In to Bidar Connect"}
               </h3>
-              <p className="text-xs text-emerald-100">Bidar ⇄ Hyderabad Verified Corridor</p>
+              <p className="text-xs text-slate-400">Bidar ⇄ Hyderabad Verified Corridor</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-emerald-100 hover:text-white hover:bg-white/10 transition-colors"
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
@@ -144,7 +145,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
               onClick={() => resetForm("REGISTER")}
               className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 mode === "REGISTER"
-                  ? "bg-white text-emerald-700 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -156,7 +157,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
               onClick={() => resetForm("LOGIN")}
               className={`py-2 text-xs font-bold rounded-lg transition-all flex items-center justify-center gap-1.5 ${
                 mode === "LOGIN"
-                  ? "bg-white text-emerald-700 shadow-xs"
+                  ? "bg-white text-blue-700 shadow-xs"
                   : "text-slate-600 hover:text-slate-900"
               }`}
             >
@@ -191,7 +192,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
                       />
                     </div>
                   </div>
@@ -207,7 +208,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                         placeholder="e.g. shiva@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
                       />
                     </div>
                   </div>
@@ -221,7 +222,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                       <select
                         value={pickupCity}
                         onChange={(e) => setPickupCity(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       >
                         <option value="Bidar">Bidar (New Bus Stand / Mailoor / Shivaji Chowk)</option>
                         <option value="Hyderabad">Hyderabad (Miyapur / Gachibowli / Secunderabad)</option>
@@ -248,7 +249,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                     value={phone}
                     onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
                     required
-                    className="w-full pl-20 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                    className="w-full pl-20 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
                   />
                 </div>
                 <p className="mt-1 text-[11px] text-slate-400">
@@ -263,7 +264,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                     id="termsCheck"
                     checked={agreedToTerms}
                     onChange={(e) => setAgreedToTerms(e.target.checked)}
-                    className="mt-1 rounded text-emerald-600 focus:ring-emerald-500"
+                    className="mt-1 rounded text-blue-600 focus:ring-blue-500"
                   />
                   <label htmlFor="termsCheck" className="text-xs text-slate-600">
                     I agree to Bidar Connect's Safety Rules, Fixed Corridor Fares (₹310), and Terms of Service.
@@ -271,11 +272,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                 </div>
               )}
 
-              {/* ACTION BUTTON */}
+              {/* ACTION BUTTON - Brand Blue */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-60 flex items-center justify-center space-x-2 text-sm mt-2"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-60 flex items-center justify-center space-x-2 text-sm mt-2"
               >
                 {loading ? (
                   <>
@@ -303,7 +304,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                     <button
                       type="button"
                       onClick={() => resetForm("LOGIN")}
-                      className="font-bold text-emerald-600 hover:underline"
+                      className="font-bold text-blue-600 hover:underline"
                     >
                       Sign In here
                     </button>
@@ -314,7 +315,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                     <button
                       type="button"
                       onClick={() => resetForm("REGISTER")}
-                      className="font-bold text-emerald-600 hover:underline"
+                      className="font-bold text-blue-600 hover:underline"
                     >
                       Create an account
                     </button>
@@ -333,7 +334,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                 <button
                   type="button"
                   onClick={() => setStep("FORM")}
-                  className="ml-2 text-xs font-bold text-emerald-600 hover:underline"
+                  className="ml-2 text-xs font-bold text-blue-600 hover:underline"
                 >
                   Edit
                 </button>
@@ -353,12 +354,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                     required
                     autoFocus
-                    className="w-full pl-10 pr-4 py-2.5 tracking-widest text-center text-lg font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                    className="w-full pl-10 pr-4 py-2.5 tracking-widest text-center text-lg font-bold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
                   />
                 </div>
                 {suggestedOtp && (
-                  <div className="mt-2 text-xs text-emerald-800 bg-emerald-50 p-2.5 rounded-xl font-medium text-center border border-emerald-200">
-                    💡 Test OTP auto-filled: <strong>{suggestedOtp}</strong> (Universal code: <strong>123456</strong>)
+                  <div className="mt-2 text-xs text-blue-900 bg-blue-50 p-2.5 rounded-xl font-medium text-center border border-blue-200 flex items-center justify-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                    <span>Test OTP auto-filled: <strong>{suggestedOtp}</strong> (Universal code: <strong>123456</strong>)</span>
                   </div>
                 )}
               </div>
@@ -366,7 +368,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-60 flex items-center justify-center space-x-2 text-sm"
+                className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-sm hover:shadow-md disabled:opacity-60 flex items-center justify-center space-x-2 text-sm"
               >
                 {loading ? (
                   <>
@@ -385,7 +387,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
                 <button
                   type="button"
                   onClick={() => requestOtp(phone)}
-                  className="text-xs font-bold text-slate-500 hover:text-emerald-600 transition-colors"
+                  className="text-xs font-bold text-slate-500 hover:text-blue-600 transition-colors"
                 >
                   Didn't receive code? Resend SMS
                 </button>
