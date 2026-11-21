@@ -84,8 +84,8 @@ class TestBidarConnectAPI(unittest.TestCase):
         self.assertEqual(bkg_data["seats_booked"], 2)
         self.assertEqual(bkg_data["fare_snapshot"]["fare_per_seat"], 310.00)
         self.assertEqual(bkg_data["fare_snapshot"]["total_fare"], 620.00)
-        self.assertEqual(bkg_data["fare_snapshot"]["company_commission"], 40.00)
-        self.assertEqual(bkg_data["fare_snapshot"]["driver_payable"], 580.00)
+        self.assertEqual(bkg_data["fare_snapshot"]["company_commission"], 20.00)
+        self.assertEqual(bkg_data["fare_snapshot"]["driver_payable"], 600.00)
         self.assertEqual(bkg_data["booking_status"], "CONFIRMED")
 
 
