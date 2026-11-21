@@ -297,6 +297,20 @@ class TestDriverApi(unittest.TestCase):
             self.assertEqual(stat_resp.status_code, 200)
             self.assertEqual(stat_resp.json()["data"]["status"], next_status)
 
+        # Attach confirmed booking for this ride to verify live earnings calculation
+        from apps.backend.app.api.v1.bookings import ACTIVE_BOOKINGS
+        ACTIVE_BOOKINGS[f"bk_{ride_id}"] = {
+            "booking_id": f"bk_{ride_id}",
+            "ride_id": ride_id,
+            "seats_booked": 2,
+            "booking_status": "CONFIRMED",
+            "fare_snapshot": {
+                "total_fare": 620.0,
+                "driver_payable": 580.0,
+                "company_commission": 40.0,
+            },
+        }
+
         # 3. Check earnings endpoint
         earn_resp = self.client.get("/api/v1/driver/earnings", headers={"Authorization": f"Bearer {token}"})
         self.assertEqual(earn_resp.status_code, 200)

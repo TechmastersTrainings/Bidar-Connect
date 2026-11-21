@@ -27,6 +27,15 @@ class TestPassengerApi(unittest.TestCase):
                 await conn.run_sync(Base.metadata.create_all)
         cls.loop.run_until_complete(init_db())
 
+    def setUp(self):
+        from apps.backend.tests.fixtures import seed_test_fixtures
+        seed_test_fixtures()
+
+    @classmethod
+    def tearDownClass(cls):
+        from apps.backend.tests.fixtures import clear_test_fixtures
+        clear_test_fixtures()
+
     def _create_user(self, name: str) -> tuple[str, str]:
         phone = f"+91{random_phone()}"
         async def do_create():
@@ -193,6 +202,57 @@ class TestPassengerApi(unittest.TestCase):
         contacts = prof_resp.json()["data"]["emergency_contacts"]
         self.assertTrue(len(contacts) >= 1)
         self.assertEqual(contacts[0]["name"], "Basavaraj Patil")
+
+    def test_verify_passenger_boarding_and_review(self):
+        """Test the end-to-end boarding code verification and post-trip review handshake."""
+        from apps.backend.app.api.v1.rides import SAMPLE_RIDES
+        for r in SAMPLE_RIDES:
+            if r["ride_id"] == "ride_b2h_001":
+                r["available_seats"] = 3
+                r["status"] = "SCHEDULED"
+
+        user_id, token = self._create_user("Commuter Priya")
+
+        # 1. Initiate booking
+        book_resp = self.client.post(
+            "/api/v1/bookings/initiate",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "ride_id": "ride_b2h_001",
+                "passenger_name": "Commuter Priya",
+                "passenger_phone": "+919876543210",
+                "requested_seats": 1,
+                "pickup_point": "New Bus Stand, Bidar",
+                "drop_point": "Gachibowli DLF, Hyderabad",
+            },
+        )
+        self.assertEqual(book_resp.status_code, 201)
+        booking = book_resp.json()["data"]
+        booking_id = booking["booking_id"]
+        ref_code = booking["reference_code"]
+        boarding_code = "".join(filter(str.isdigit, ref_code))[-4:]
+
+        # 2. Driver verifies boarding using 4-digit code
+        board_resp = self.client.post(
+            f"/api/v1/driver/rides/ride_b2h_001/manifest/{booking_id}/verify-boarding",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"boarding_code": boarding_code},
+        )
+        self.assertEqual(board_resp.status_code, 200)
+        self.assertEqual(board_resp.json()["data"]["booking_status"], "BOARDED")
+
+        # 3. Passenger leaves post-trip rating and feedback
+        review_resp = self.client.post(
+            f"/api/v1/bookings/{booking_id}/review",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "rating": 5,
+                "tags": ["Punctual", "Smooth Highway Driving", "Clean Car"],
+                "comment": "Prakash was very polite and the car was spotless.",
+            },
+        )
+        self.assertEqual(review_resp.status_code, 200)
+        self.assertEqual(review_resp.json()["data"]["review"]["rating"], 5)
 
 
 if __name__ == "__main__":

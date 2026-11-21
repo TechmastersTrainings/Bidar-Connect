@@ -82,6 +82,11 @@ Thumbs.db
 *.swp
 *.swo
 
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+
 # Temporary & Uploads
 tmp/
 temp/

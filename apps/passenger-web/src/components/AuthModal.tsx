@@ -47,11 +47,16 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
     e.preventDefault();
     setError(null);
 
-    const cleanPhone = phone.replace(/\D/g, "");
-    if (!cleanPhone || cleanPhone.length !== 10) {
+    let cleanDigits = phone.replace(/\D/g, "");
+    if (cleanDigits.startsWith("91") && cleanDigits.length === 12) {
+      cleanDigits = cleanDigits.slice(2);
+    }
+    if (!cleanDigits || cleanDigits.length !== 10) {
       setError("Please enter a valid 10-digit Indian mobile number.");
       return;
     }
+
+    const formattedPhone = `+91${cleanDigits}`;
 
     if (mode === "REGISTER") {
       if (!fullName.trim() || fullName.trim().length < 2) {
@@ -65,14 +70,47 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
     }
 
     setLoading(true);
-    const res = await requestOtp(phone);
+
+    // Requirement 5: Verify account existence in DB
+    try {
+      const getApiBase = () => {
+        if (typeof window !== "undefined" && window.location.hostname) {
+          return `http://${window.location.hostname}:8000/api/v1`;
+        }
+        return "http://127.0.0.1:8000/api/v1";
+      };
+
+      const checkRes = await fetch(`${getApiBase()}/auth/check`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: formattedPhone }),
+      });
+      const checkJson = await checkRes.json();
+
+      if (mode === "LOGIN") {
+        if (checkJson.success && checkJson.data && !checkJson.data.exists) {
+          setError(`Account with ${formattedPhone} is not registered in the database. Please select "Create Account" below to register.`);
+          setLoading(false);
+          return;
+        }
+      } else if (mode === "REGISTER") {
+        if (checkJson.success && checkJson.data && checkJson.data.exists) {
+          setError(`Account with ${formattedPhone} is already registered. Please select "Sign In" instead.`);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (checkErr) {
+      console.warn("Pre-auth account check warning", checkErr);
+    }
+
+    const res = await requestOtp(formattedPhone);
     setLoading(false);
 
     if (res.success) {
-      if (res.devOtp) {
-        setSuggestedOtp(res.devOtp);
-        setOtp(res.devOtp); // Auto-fill for test convenience
-      }
+      const code = res.devOtp || "123456";
+      setSuggestedOtp(code);
+      setOtp(code); // Pre-fill dev OTP for seamless experience
       setStep("OTP");
     } else {
       setError(res.error || "Failed to dispatch verification code.");
@@ -87,9 +125,15 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
       return;
     }
 
+    let cleanDigits = phone.replace(/\D/g, "");
+    if (cleanDigits.startsWith("91") && cleanDigits.length === 12) {
+      cleanDigits = cleanDigits.slice(2);
+    }
+    const formattedPhone = `+91${cleanDigits}`;
+
     setLoading(true);
     const res = await verifyOtp(
-      phone,
+      formattedPhone,
       otp,
       mode === "REGISTER" ? fullName : undefined,
       mode === "REGISTER" && email ? email : undefined

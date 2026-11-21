@@ -29,6 +29,15 @@ class TestSearchBookingEngine(unittest.TestCase):
                 await conn.run_sync(Base.metadata.create_all)
         cls.loop.run_until_complete(init_db())
 
+    def setUp(self):
+        from apps.backend.tests.fixtures import seed_test_fixtures
+        seed_test_fixtures()
+
+    @classmethod
+    def tearDownClass(cls):
+        from apps.backend.tests.fixtures import clear_test_fixtures
+        clear_test_fixtures()
+
     def _create_user(self, name: str, is_driver: bool = False) -> tuple[str, str]:
         phone = f"+91{random_phone()}"
         async def do_create():
@@ -345,6 +354,20 @@ class TestSearchBookingEngine(unittest.TestCase):
         # 4. Verify passenger booking record status
         self.assertEqual(ACTIVE_BOOKINGS[b1_id]["booking_status"], "CANCELLED")
         self.assertEqual(ACTIVE_BOOKINGS[b1_id]["refund_amount"], 310.0)
+
+    def test_public_corridor_summary_telemetry(self):
+        """Phase 12: Verify public unauthenticated corridor telemetry and fare transparency."""
+        res = self.client.get("/api/v1/rides/corridor/summary")
+        self.assertEqual(res.status_code, 200)
+        data = res.json()["data"]
+        self.assertEqual(data["corridor_name"], "Bidar ⇄ Hyderabad Corridor")
+        self.assertEqual(data["highway"], "NH 65")
+        self.assertEqual(data["standard_fare_inr"], 310)
+        self.assertEqual(data["driver_cost_share_inr"], 290)
+        self.assertEqual(data["platform_fee_inr"], 20)
+        self.assertEqual(data["surge_multiplier"], 1.0)
+        self.assertGreaterEqual(len(data["waypoints"]), 6)
+        self.assertIn("emergency_helpline", data)
 
 
 if __name__ == "__main__":

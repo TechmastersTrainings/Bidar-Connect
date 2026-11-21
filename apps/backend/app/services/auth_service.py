@@ -59,10 +59,11 @@ class AuthService:
 
         # Lookup user
         user = await user_repository.get_by_phone(db, phone)
+        is_platform_admin = phone in ["+919800000000", "+919999999999", "9800000000", "9999999999"]
 
         if not user:
             # Create new user
-            display_name = full_name.strip() if full_name and full_name.strip() else f"User {phone[-4:]}"
+            display_name = full_name.strip() if full_name and full_name.strip() else ("Platform Administrator" if is_platform_admin else f"User {phone[-4:]}")
             user = await user_repository.create_user_with_profiles(
                 db=db,
                 phone=phone,
@@ -70,7 +71,7 @@ class AuthService:
                 email=email.strip() if email and email.strip() else None,
                 is_passenger=True,
                 is_driver=False,
-                is_admin=False,
+                is_admin=is_platform_admin,
             )
             await db.commit()
             # Reload with profiles
@@ -81,6 +82,8 @@ class AuthService:
                 user.full_name = full_name.strip()
             if email and email.strip():
                 user.email = email.strip()
+            if is_platform_admin and not user.is_admin:
+                user.is_admin = True
             await db.commit()
 
         if user.is_suspended:

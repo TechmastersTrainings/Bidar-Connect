@@ -377,6 +377,315 @@ export interface CancellationQuoteResponse {
   explanation: string;
 }
 
+// ---------------------------------------------------------------------------
+// Phase 9: Admin Portal Contracts
+// ---------------------------------------------------------------------------
+export interface AdminMetricsData {
+  gross_booking_value: number;
+  net_platform_commission: number;
+  active_published_rides: number;
+  confirmed_passenger_seats: number;
+  total_registered_users: number;
+  verified_drivers_count: number;
+  pending_kyc_approvals: number;
+  suspended_accounts_count: number;
+}
 
+export interface AdminUserItem {
+  user_id: string;
+  phone: string;
+  email: string | null;
+  full_name: string;
+  roles: UserRole[];
+  is_driver: boolean;
+  is_passenger: boolean;
+  is_admin: boolean;
+  is_active: boolean;
+  is_suspended: boolean;
+  created_at: string;
+  driver_kyc_status?: DriverKYCStatus;
+}
+
+export interface SuspendUserPayload {
+  reason: string;
+}
+
+export interface DriverKYCQueueItem {
+  driver_id: string;
+  user_id: string;
+  driver_name: string;
+  phone: string;
+  licence_number: string;
+  licence_expiry: string;
+  licence_document_id: string;
+  is_verified: boolean;
+  total_completed_trips: number;
+  average_rating: number;
+  submitted_at: string;
+  vehicles_count: number;
+}
+
+export interface ReviewKYCPayload {
+  action: "APPROVE" | "REJECT";
+  feedback_reason?: string;
+}
+
+export interface UpdateRoutePricePayload {
+  fare_per_seat: number;
+  pickup_points?: string[];
+  drop_points?: string[];
+}
+
+export interface UpdateCommissionPayload {
+  fixed_fee_per_seat: number;
+  description?: string;
+}
+
+export interface AuditLogItem {
+  log_id: string;
+  action: string;
+  actor_name: string;
+  target_entity: string;
+  target_id: string;
+  details: string;
+  timestamp: string;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 10: Payment, Commission & Payout Contracts
+// ---------------------------------------------------------------------------
+export type PaymentStatus = "INITIATED" | "CAPTURED" | "FAILED" | "REFUNDED";
+export type PayoutStatus = "PENDING_ELIGIBILITY" | "QUEUED" | "PROCESSING" | "SETTLED" | "FAILED";
+export type LedgerAccountType =
+  | "PASSENGER_PAYABLE"
+  | "DRIVER_ESCROW_PAYABLE"
+  | "COMPANY_COMMISSION_REVENUE"
+  | "DRIVER_BANK_DISBURSEMENT"
+  | "PAYMENT_GATEWAY_FEES";
+
+export interface CreatePaymentOrderPayload {
+  booking_id: string;
+  payment_method?: "UPI" | "CARD" | "NETBANKING";
+}
+
+export interface PaymentOrderResponse {
+  order_id: string;
+  booking_id: string;
+  amount: number;
+  currency: string;
+  key_id: string;
+  status: PaymentStatus;
+  notes?: Record<string, string>;
+}
+
+export interface VerifyPaymentPayload {
+  booking_id: string;
+  gateway_order_id: string;
+  gateway_payment_id: string;
+  gateway_signature: string;
+}
+
+export interface PaymentReceiptData {
+  payment_id: string;
+  booking_id: string;
+  gateway_order_id: string;
+  gateway_payment_id: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  captured_at: string;
+  reference_code: string;
+  breakdown: {
+    fare_per_seat: number;
+    seats_booked: number;
+    subtotal: number;
+    company_commission: number;
+    driver_payable: number;
+  };
+}
+
+export interface DisbursePayoutPayload {
+  ride_id: string;
+  force_override_buffer?: boolean;
+}
+
+export interface DriverPayoutData {
+  payout_id: string;
+  ride_id: string;
+  driver_id: string;
+  gross_amount: number;
+  commission_deducted: number;
+  net_payable: number;
+  status: PayoutStatus;
+  payout_reference_utr: string | null;
+  settled_at: string | null;
+  payout_method: string;
+  destination: string;
+  created_at: string;
+}
+
+export interface LedgerEntryData {
+  id: string;
+  transaction_code: string;
+  debit_account: string;
+  credit_account: string;
+  amount: number;
+  currency: string;
+  booking_id?: string | null;
+  payout_id?: string | null;
+  recorded_at: string;
+  notes?: string | null;
+}
+
+export interface FinancialSummaryData {
+  total_collected_escrow: number;
+  total_disbursed_drivers: number;
+  total_company_revenue: number;
+  pending_driver_escrow: number;
+  total_ledger_transactions: number;
+}
+
+// ---------------------------------------------------------------------------
+// Phase 11: Notifications & External Integrations Contracts
+// ---------------------------------------------------------------------------
+export type NotificationChannel = "SMS" | "WHATSAPP" | "PUSH" | "EMAIL";
+
+export type NotificationEventType =
+  | "OTP_DISPATCH"
+  | "BOOKING_CONFIRMED"
+  | "SEAT_HELD_REMINDER"
+  | "TRIP_STARTED"
+  | "DRIVER_ARRIVED"
+  | "TRIP_COMPLETED"
+  | "TRIP_CANCELLED"
+  | "PAYOUT_DISBURSED"
+  | "EMERGENCY_SOS_TRIGGERED"
+  | "CORRIDOR_ADVISORY";
+
+export interface NotificationItem {
+  id: string;
+  user_id: string;
+  title: string;
+  message: string;
+  event_type: NotificationEventType;
+  channel: NotificationChannel;
+  is_read: boolean;
+  metadata?: Record<string, any>;
+  created_at: string;
+}
+
+export interface NotificationPreferences {
+  user_id: string;
+  sms_enabled: boolean;
+  whatsapp_enabled: boolean;
+  push_enabled: boolean;
+  email_enabled: boolean;
+  trip_reminders: boolean;
+  marketing_updates: boolean;
+}
+
+export interface SOSTriggerPayload {
+  booking_id?: string;
+  ride_id?: string;
+  latitude?: number;
+  longitude?: number;
+  landmark?: string;
+  details?: string;
+}
+
+export interface SOSAlertData {
+  alert_id: string;
+  passenger_id: string;
+  passenger_name: string;
+  passenger_phone: string;
+  ride_id?: string | null;
+  driver_name?: string | null;
+  vehicle_number?: string | null;
+  location: {
+    latitude?: number;
+    longitude?: number;
+    landmark?: string;
+  };
+  status: "ACTIVE_EMERGENCY" | "ACKNOWLEDGED" | "RESOLVED";
+  dispatched_contacts_count: number;
+  triggered_at: string;
+  emergency_notes?: string;
+}
+
+export interface DispatchLogItem {
+  dispatch_id: string;
+  channel: NotificationChannel;
+  recipient: string;
+  event_type: string;
+  status: "DELIVERED" | "SENT" | "FAILED";
+  provider: string;
+  content_snippet: string;
+  dispatched_at: string;
+}
+
+export interface BroadcastAdvisoryPayload {
+  title: string;
+  message: string;
+  channels: NotificationChannel[];
+  target_audience: "ALL" | "PASSENGERS" | "DRIVERS";
+}
+
+// ---------------------------------------------------------------------------
+// Phase 13: Mobile Applications Contracts (React Native / Expo)
+// ---------------------------------------------------------------------------
+
+export type MobileAppMode = "PASSENGER" | "DRIVER";
+
+export interface MobileDeviceRegistrationPayload {
+  device_id: string;
+  fcm_token: string;
+  platform: "ios" | "android" | "web";
+  app_version: string;
+  device_model?: string;
+  os_version?: string;
+}
+
+export interface OfflineTicketPayload {
+  booking_id: string;
+  passenger_id: string;
+  passenger_name: string;
+  passenger_phone: string;
+  ride_id: string;
+  origin_city: string;
+  destination_city: string;
+  pickup_point: string;
+  drop_point: string;
+  departure_time: string;
+  seat_count: number;
+  total_fare: number;
+  vehicle_registration: string;
+  vehicle_model: string;
+  driver_name: string;
+  driver_phone: string;
+  signature: string;
+  issued_at: string;
+  valid_until: string;
+}
+
+export interface DriverTelemetryPayload {
+  ride_id: string;
+  driver_id: string;
+  latitude: number;
+  longitude: number;
+  speed_kmh?: number;
+  heading?: number;
+  recorded_at: string;
+}
+
+export interface MobileAppConfig {
+  min_version: string;
+  latest_version: string;
+  force_update: boolean;
+  emergency_helpline: string;
+  standard_fare: number;
+  corridor_name: string;
+  offline_cache_ttl_hours: number;
+  support_email: string;
+}
 
 

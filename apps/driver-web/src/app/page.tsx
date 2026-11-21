@@ -29,7 +29,19 @@ import {
   Building,
 } from "lucide-react";
 
-const API_BASE = "http://127.0.0.1:8000/api/v1";
+const getApiBase = () => {
+  if (typeof window !== "undefined" && window.location.hostname) {
+    return `http://${window.location.hostname}:8000/api/v1`;
+  }
+  return "http://127.0.0.1:8000/api/v1";
+};
+
+const getHostUrl = (port: number) => {
+  if (typeof window !== "undefined" && window.location.hostname) {
+    return `http://${window.location.hostname}:${port}`;
+  }
+  return `http://localhost:${port}`;
+};
 
 interface Vehicle {
   vehicle_id: string;
@@ -134,6 +146,7 @@ interface EarningsData {
 }
 
 export default function DriverPortalPage() {
+  const API_BASE = getApiBase();
   const { user, token, isAuthenticated, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"OVERVIEW" | "PUBLISH" | "RIDES" | "FLEET" | "KYC" | "EARNINGS">("OVERVIEW");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -150,26 +163,80 @@ export default function DriverPortalPage() {
   const [manifestLoading, setManifestLoading] = useState(false);
   const [isVehicleModalOpen, setIsVehicleModalOpen] = useState(false);
 
-  // Publish Form State
+  // Payout Request State
+  const [payoutLoading, setPayoutLoading] = useState(false);
+  const [activePayoutModal, setActivePayoutModal] = useState<any | null>(null);
+  const [safetyBufferSeconds, setSafetyBufferSeconds] = useState(0);
+
+  // Safety Buffer Countdown Timer
+  useEffect(() => {
+    if (!activePayoutModal || safetyBufferSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setSafetyBufferSeconds((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [activePayoutModal, safetyBufferSeconds]);
+
+  // Periodic 4-second polling for live passenger manifest & ride status updates
+  useEffect(() => {
+    if (!token) return;
+    const timer = setInterval(async () => {
+      fetchDashboardData();
+      if (activePayoutModal && activePayoutModal.status !== "SETTLED") {
+        try {
+          const res = await fetch(`${API_BASE}/payouts/requests`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const d = await res.json();
+          if (res.ok && d.success && Array.isArray(d.data)) {
+            const currentReq = d.data.find((r: any) => r.ride_id === activePayoutModal.ride_id);
+            if (currentReq) {
+              setActivePayoutModal(currentReq);
+              if (currentReq.status === "SETTLED") {
+                setSafetyBufferSeconds(0);
+              } else if (typeof currentReq.remaining_seconds === "number") {
+                setSafetyBufferSeconds(currentReq.remaining_seconds);
+              }
+            }
+          }
+        } catch (e) {
+          // ignore
+        }
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [token, activePayoutModal]);
+
+  // Publish Form State - completely blank initial state, no default-typed values
   const [pubOrigin, setPubOrigin] = useState("Bidar");
   const [pubDestination, setPubDestination] = useState("Hyderabad");
-  const [pubDate, setPubDate] = useState("2026-11-06");
-  const [pubTime, setPubTime] = useState("08:00");
-  const [pubPickup, setPubPickup] = useState("New Bus Stand, Bidar");
-  const [pubDrop, setPubDrop] = useState("Gachibowli DLF, Hyderabad");
-  const [pubSeats, setPubSeats] = useState(3);
+  const [pubDate, setPubDate] = useState("");
+  const [pubTime, setPubTime] = useState("");
+  const [pubPickup, setPubPickup] = useState("");
+  const [pubDrop, setPubDrop] = useState("");
+  const [pubSeats, setPubSeats] = useState<number | "">("");
   const [pubVehicleId, setPubVehicleId] = useState("");
-  const [pubNotes, setPubNotes] = useState("AC on throughout. Punctual departure guaranteed.");
+  const [pubVehicleMake, setPubVehicleMake] = useState("");
+  const [pubVehicleModel, setPubVehicleModel] = useState("");
+  const [pubVehicleReg, setPubVehicleReg] = useState("");
+  const [pubVehicleFuel, setPubVehicleFuel] = useState("");
+  const [pubNotes, setPubNotes] = useState("");
   const [publishing, setPublishing] = useState(false);
 
-  // New Vehicle Form State
+  // New Vehicle Form State - Clean blank state
   const [vMake, setVMake] = useState("");
   const [vModel, setVModel] = useState("");
   const [vReg, setVReg] = useState("");
   const [vColor, setVColor] = useState("");
-  const [vYear, setVYear] = useState(2023);
-  const [vFuel, setVFuel] = useState("DIESEL");
-  const [vCapacity, setVCapacity] = useState(4);
+  const [vYear, setVYear] = useState<number | "">("");
+  const [vFuel, setVFuel] = useState("");
+  const [vCapacity, setVCapacity] = useState<number | "">("");
   const [vSubmitting, setVSubmitting] = useState(false);
 
   // Payout Settings Form State
@@ -180,7 +247,7 @@ export default function DriverPortalPage() {
 
   // KYC Form State
   const [kLicence, setKLicence] = useState("");
-  const [kExpiry, setKExpiry] = useState("2028-12-31");
+  const [kExpiry, setKExpiry] = useState("");
   const [kSubmitting, setKSubmitting] = useState(false);
 
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -200,37 +267,58 @@ export default function DriverPortalPage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // 1. Profile
-      const profRes = await fetch(`${API_BASE}/driver/profile`, { headers });
-      const profData = await profRes.json();
-      if (profData.success && profData.data) {
-        setProfile(profData.data);
-        if (profData.data.payout_upi_id) setPUpi(profData.data.payout_upi_id);
-        if (profData.data.payout_bank_account) setPBankAcc(profData.data.payout_bank_account);
-        if (profData.data.payout_ifsc) setPIfsc(profData.data.payout_ifsc);
+      try {
+        const profRes = await fetch(`${API_BASE}/driver/profile`, { headers });
+        if (profRes.ok) {
+          const profData = await profRes.json();
+          if (profData.success && profData.data) {
+            setProfile(profData.data);
+            if (profData.data.payout_upi_id) setPUpi(profData.data.payout_upi_id);
+            if (profData.data.payout_bank_account) setPBankAcc(profData.data.payout_bank_account);
+            if (profData.data.payout_ifsc) setPIfsc(profData.data.payout_ifsc);
+          }
+        }
+      } catch (e) {
+        console.error("Profile load warning", e);
       }
 
       // 2. Vehicles
-      const vehRes = await fetch(`${API_BASE}/driver/vehicles`, { headers });
-      const vehData = await vehRes.json();
-      if (vehData.success && vehData.data) {
-        setVehicles(vehData.data);
-        if (vehData.data.length > 0 && !pubVehicleId) {
-          setPubVehicleId(vehData.data[0].vehicle_id);
+      try {
+        const vehRes = await fetch(`${API_BASE}/driver/vehicles`, { headers });
+        if (vehRes.ok) {
+          const vehData = await vehRes.json();
+          if (vehData.success && Array.isArray(vehData.data)) {
+            setVehicles(vehData.data);
+          }
         }
+      } catch (e) {
+        console.error("Vehicles load warning", e);
       }
 
       // 3. Rides
-      const rideRes = await fetch(`${API_BASE}/driver/rides`, { headers });
-      const rideData = await rideRes.json();
-      if (rideData.success && rideData.data) {
-        setRides(rideData.data);
+      try {
+        const rideRes = await fetch(`${API_BASE}/driver/rides`, { headers });
+        if (rideRes.ok) {
+          const rideData = await rideRes.json();
+          if (rideData.success && Array.isArray(rideData.data)) {
+            setRides(rideData.data);
+          }
+        }
+      } catch (e) {
+        console.error("Rides load warning", e);
       }
 
       // 4. Earnings
-      const earnRes = await fetch(`${API_BASE}/driver/earnings`, { headers });
-      const earnData = await earnRes.json();
-      if (earnData.success && earnData.data) {
-        setEarnings(earnData.data);
+      try {
+        const earnRes = await fetch(`${API_BASE}/driver/earnings`, { headers });
+        if (earnRes.ok) {
+          const earnData = await earnRes.json();
+          if (earnData.success && earnData.data) {
+            setEarnings(earnData.data);
+          }
+        }
+      } catch (e) {
+        console.error("Earnings load warning", e);
       }
     } catch (e) {
       console.error("Failed to load driver dashboard data", e);
@@ -241,6 +329,15 @@ export default function DriverPortalPage() {
 
   useEffect(() => {
     fetchDashboardData();
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("action") === "offer" || params.get("action") === "publish") {
+        setActiveTab("PUBLISH");
+        if (!token) {
+          setIsAuthModalOpen(true);
+        }
+      }
+    }
   }, [token]);
 
   // Handle Route flip
@@ -248,13 +345,9 @@ export default function DriverPortalPage() {
     if (pubOrigin === "Bidar") {
       setPubOrigin("Hyderabad");
       setPubDestination("Bidar");
-      setPubPickup("Gachibowli DLF, Hyderabad");
-      setPubDrop("New Bus Stand, Bidar");
     } else {
       setPubOrigin("Bidar");
       setPubDestination("Hyderabad");
-      setPubPickup("New Bus Stand, Bidar");
-      setPubDrop("Gachibowli DLF, Hyderabad");
     }
   };
 
@@ -263,6 +356,26 @@ export default function DriverPortalPage() {
     e.preventDefault();
     if (!token) {
       setIsAuthModalOpen(true);
+      return;
+    }
+    if (!pubDate || !pubTime) {
+      showToast("error", "Please select departure date and time.");
+      return;
+    }
+    if (!pubPickup.trim() || !pubDrop.trim()) {
+      showToast("error", "Please specify pickup and drop landmarks.");
+      return;
+    }
+    if (!pubSeats || Number(pubSeats) < 1) {
+      showToast("error", "Please select offered seats (1 to 6).");
+      return;
+    }
+    if (!pubVehicleMake.trim() || !pubVehicleModel.trim()) {
+      showToast("error", "Please type your car company and model.");
+      return;
+    }
+    if (!pubVehicleReg.trim()) {
+      showToast("error", "Please enter your vehicle registration number.");
       return;
     }
     setPublishing(true);
@@ -278,16 +391,31 @@ export default function DriverPortalPage() {
           origin_city: pubOrigin,
           destination_city: pubDestination,
           departure_time,
-          pickup_point: pubPickup,
-          drop_point: pubDrop,
+          pickup_point: pubPickup.trim(),
+          drop_point: pubDrop.trim(),
           available_seats: Number(pubSeats),
-          vehicle_id: pubVehicleId || (vehicles[0]?.vehicle_id ?? "veh_default"),
-          driver_notes: pubNotes,
+          vehicle_id: pubVehicleId || null,
+          vehicle_make: pubVehicleMake.trim(),
+          vehicle_model: pubVehicleModel.trim(),
+          vehicle_reg: pubVehicleReg.trim().toUpperCase(),
+          vehicle_fuel: pubVehicleFuel || "PETROL",
+          driver_notes: pubNotes.trim() || null,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         showToast("success", "Ride published successfully with locked ₹310 corridor fare!");
+        setPubDate("");
+        setPubTime("");
+        setPubPickup("");
+        setPubDrop("");
+        setPubSeats("");
+        setPubVehicleId("");
+        setPubVehicleMake("");
+        setPubVehicleModel("");
+        setPubVehicleReg("");
+        setPubVehicleFuel("");
+        setPubNotes("");
         setActiveTab("RIDES");
         fetchDashboardData();
       } else {
@@ -345,6 +473,106 @@ export default function DriverPortalPage() {
       }
     } catch (err: any) {
       showToast("error", err.message || "Network error updating status");
+    }
+  };
+
+  // Verify Passenger Boarding with 4-Digit Code
+  const handleVerifyBoarding = async (rideId: string, bookingId: string, refCode: string) => {
+    if (!token) return;
+    const digits = refCode.replace(/[^0-9]/g, "").slice(-4) || "8421";
+    const entered = window.prompt("Enter passenger 4-digit boarding code (displayed on their digital pass):", digits);
+    if (!entered) return;
+
+    try {
+      const res = await fetch(`${API_BASE}/driver/rides/${rideId}/manifest/${bookingId}/verify-boarding`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ boarding_code: entered.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        showToast("success", "Passenger verified and marked as boarded!");
+        if (selectedRideForManifest) {
+          const updated = selectedRideForManifest.manifest.map((item) =>
+            item.booking_id === bookingId ? { ...item, booking_status: "BOARDED" } : item
+          );
+          setSelectedRideForManifest({ ...selectedRideForManifest, manifest: updated });
+        }
+      } else {
+        showToast("error", data.error?.message || "Invalid boarding code. Please verify.");
+      }
+    } catch (err: any) {
+      showToast("error", "Network error verifying boarding");
+    }
+  };
+
+  // Request & Disburse Payout
+  const handleRequestPayout = async (rideId: string, forceOverride: boolean = false) => {
+    if (!token) return;
+    setPayoutLoading(true);
+    try {
+      if (forceOverride) {
+        const disburseRes = await fetch(`${API_BASE}/payouts/rides/${rideId}/disburse`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ force_override_buffer: true }),
+        });
+        const disburseData = await disburseRes.json();
+        if (disburseRes.ok && disburseData.success) {
+          const resObj = disburseData.data;
+          showToast("success", `Payout of INR ${resObj.net_payable || resObj.net_amount} settled via IMPS! UTR #${resObj.payout_reference_utr || resObj.bank_utr}`);
+          setActivePayoutModal({
+            ...resObj,
+            status: "SETTLED",
+            payout_reference_utr: resObj.payout_reference_utr || resObj.bank_utr,
+          });
+          setSafetyBufferSeconds(0);
+          fetchDashboardData();
+        } else {
+          showToast("error", disburseData.error?.message || "Failed to disburse payout");
+        }
+        return;
+      }
+
+      // Step 2: Driver submits formal payout request for completed ride
+      const reqRes = await fetch(`${API_BASE}/payouts/rides/${rideId}/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const reqData = await reqRes.json();
+      if (reqRes.ok && reqData.success) {
+        const pData = reqData.data;
+        showToast("success", "Payout requested! Enqueued for Admin review & 5-minute automated bank clearing.");
+        setActivePayoutModal(pData);
+        setSafetyBufferSeconds(pData.remaining_seconds || 300);
+        fetchDashboardData();
+      } else {
+        // Fallback to eligibility check
+        const eligRes = await fetch(`${API_BASE}/payouts/rides/${rideId}/eligibility`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const eligData = await eligRes.json();
+        if (eligRes.ok && eligData.success) {
+          const info = eligData.data;
+          setSafetyBufferSeconds(info.buffer_remaining_seconds || 300);
+          setActivePayoutModal(info);
+        } else {
+          showToast("error", reqData.error?.message || eligData.error?.message || "Payout request failed");
+        }
+      }
+    } catch (err: any) {
+      showToast("error", "Network error processing payout settlement");
+    } finally {
+      setPayoutLoading(false);
     }
   };
 
@@ -454,7 +682,7 @@ export default function DriverPortalPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-screen bg-slate-50 flex flex-col font-sans w-full max-w-full overflow-x-hidden">
       {/* Toast Notification */}
       {notification && (
         <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top-4">
@@ -475,25 +703,95 @@ export default function DriverPortalPage() {
         </div>
       )}
 
-      {/* Header - Brand Navy & Royal Blue */}
-      <header className="sticky top-0 z-40 bg-slate-900 border-b border-slate-800 text-white shadow-md">
+      {/* Header - White-Glass Public Website Aesthetic with 2-Tier Non-Overflowing Layout */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-xl border-b border-slate-200/80 shadow-[0_4px_24px_rgba(15,23,42,0.04)] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Brand Logo */}
-            <div className="flex items-center space-x-3">
-              <div className="w-9 h-9 bg-blue-600 rounded-lg flex items-center justify-center shadow-xs">
-                <Car className="w-5 h-5 text-white" />
-              </div>
-              <div className="flex items-baseline space-x-2">
-                <span className="text-lg font-black tracking-tight text-white">Bidar Connect</span>
-                <span className="text-xs font-semibold px-2 py-0.5 bg-blue-500/20 text-blue-400 border border-blue-500/30 rounded-md">
-                  Driver Portal
-                </span>
-              </div>
+          {/* Tier 1: Brand Logo, Ecosystem Switcher & Driver Profile */}
+          <div className="flex items-center justify-between h-16 py-2.5 gap-3 border-b border-slate-100">
+            {/* Brand Logo & Highway Corridor Status */}
+            <div className="flex items-center gap-3 shrink-0">
+              <a href={getHostUrl(3000)} className="flex items-center gap-2.5 group">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 ring-1 ring-white/40 group-hover:scale-105 transition-transform duration-200">
+                  <Car className="w-5 h-5 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-base font-black text-slate-900 tracking-tight leading-none whitespace-nowrap">
+                    Bidar Connect
+                  </span>
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span className="text-[10px] font-bold text-blue-600 tracking-wider uppercase leading-none whitespace-nowrap">
+                      NH 65 Corridor
+                    </span>
+                  </div>
+                </div>
+              </a>
+              <span className="inline-flex items-center text-[10px] font-bold px-2 py-0.5 bg-blue-50 text-blue-700 border border-blue-200 rounded-lg">
+                Driver Portal
+              </span>
             </div>
 
-            {/* Navigation Tabs */}
-            <nav className="hidden md:flex items-center space-x-1">
+            {/* Quick Actions & Auth */}
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              {/* Cross Portal Link to Passenger Portal */}
+              <a
+                href={
+                  token && user
+                    ? `${getHostUrl(3001)}?auth_token=${encodeURIComponent(token)}&auth_user=${encodeURIComponent(JSON.stringify(user))}`
+                    : getHostUrl(3001)
+                }
+                className="whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:text-blue-700 hover:bg-blue-50/80 rounded-xl transition-all border border-slate-200 shadow-xs cursor-pointer"
+                title="Open Passenger Booking Portal"
+              >
+                <Users className="w-3.5 h-3.5 text-blue-600" />
+                <span className="hidden sm:inline">Passenger Portal</span>
+                <span className="sm:hidden">Passenger</span>
+              </a>
+
+              <a
+                href={getHostUrl(3000)}
+                className="whitespace-nowrap inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100 transition-all"
+                title="Go to Public Website"
+              >
+                <span>Home</span>
+              </a>
+
+              {/* Auth / Profile Area */}
+              {isAuthenticated && user ? (
+                <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
+                  <div className="flex flex-col text-right">
+                    <span className="text-xs font-bold text-slate-900 flex items-center justify-end gap-1">
+                      {profile?.full_name || user.full_name}
+                      <span className="inline-flex items-center text-amber-600 bg-amber-50 px-1 py-0.2 rounded border border-amber-200 text-[10px] font-bold">
+                        <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500 mr-0.5" />
+                        {profile?.average_rating ? profile.average_rating.toFixed(1) : "5.0"}
+                      </span>
+                    </span>
+                    <span className="text-[10px] text-emerald-600 font-semibold leading-tight">
+                      Verified Partner
+                    </span>
+                  </div>
+                  <button
+                    onClick={logout}
+                    className="text-xs text-slate-600 hover:text-red-600 hover:bg-red-50 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white transition-all font-semibold shadow-xs cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsAuthModalOpen(true)}
+                  className="px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+                >
+                  Driver Sign In
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Tier 2: Floating Pill Bar Navigation for Driver Features */}
+          <div className="py-2.5 flex items-center justify-center overflow-x-auto">
+            <nav className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-slate-100/90 border border-slate-200/80 shadow-inner backdrop-blur-sm shrink-0 max-w-full">
               {[
                 { id: "OVERVIEW", label: "Dashboard", icon: LayoutDashboard },
                 { id: "PUBLISH", label: "Publish Ride", icon: PlusCircle },
@@ -508,10 +806,10 @@ export default function DriverPortalPage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+                    className={`flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold rounded-full px-3 py-1.5 transition-all duration-150 cursor-pointer ${
                       isActive
-                        ? "bg-blue-600 text-white shadow-xs"
-                        : "text-slate-300 hover:text-white hover:bg-slate-800"
+                        ? "bg-white text-blue-600 font-bold shadow-xs border border-slate-200/60"
+                        : "text-slate-700 hover:text-blue-600 hover:bg-white/70"
                     }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
@@ -520,62 +818,7 @@ export default function DriverPortalPage() {
                 );
               })}
             </nav>
-
-            {/* Auth / Profile Area */}
-            <div className="flex items-center space-x-3">
-              {isAuthenticated && user ? (
-                <div className="flex items-center space-x-3">
-                  <div className="hidden sm:flex flex-col text-right">
-                    <span className="text-xs font-bold text-slate-100 flex items-center justify-end gap-1">
-                      {profile?.full_name || user.full_name}
-                      <span className="inline-flex items-center text-amber-400 text-[11px] font-semibold">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400 mr-0.5" />
-                        {profile?.average_rating ? profile.average_rating.toFixed(1) : "5.0"}
-                      </span>
-                    </span>
-                    <span className="text-[10px] text-blue-400 font-mono">
-                      {profile?.is_verified ? "Verified Partner" : "Pending KYC"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={logout}
-                    className="text-xs text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 transition-colors font-semibold"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => setIsAuthModalOpen(true)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-all shadow-xs"
-                >
-                  Driver Sign In
-                </button>
-              )}
-            </div>
           </div>
-        </div>
-
-        {/* Mobile Navigation Bar */}
-        <div className="md:hidden flex overflow-x-auto px-4 py-2 border-t border-slate-800 space-x-1">
-          {[
-            { id: "OVERVIEW", label: "Dashboard" },
-            { id: "PUBLISH", label: "Publish" },
-            { id: "RIDES", label: "Rides" },
-            { id: "FLEET", label: "Fleet" },
-            { id: "KYC", label: "KYC" },
-            { id: "EARNINGS", label: "Earnings" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap ${
-                activeTab === tab.id ? "bg-blue-600 text-white" : "text-slate-400"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
         </div>
       </header>
 
@@ -635,37 +878,37 @@ export default function DriverPortalPage() {
                   </div>
                 </div>
                 <div className="mt-3 flex items-baseline">
-                  <span className="text-2xl font-black text-slate-900">₹{earnings?.total_net_payout ? earnings.total_net_payout.toFixed(0) : "1,740"}</span>
+                  <span className="text-2xl font-black text-slate-900">₹{earnings?.total_net_payout != null ? earnings.total_net_payout.toFixed(0) : "0"}</span>
                   <span className="ml-2 text-xs text-blue-600 font-semibold font-mono">Auto-Clear</span>
                 </div>
               </div>
             </div>
 
-            {/* Quick Action Banner */}
-            <div className="bg-slate-900 rounded-2xl p-6 text-white border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            {/* Quick Action Banner - Vibrant Corridor Gradient */}
+            <div className="bg-gradient-to-r from-blue-700 via-indigo-700 to-blue-800 rounded-2xl p-6 text-white shadow-md shadow-blue-900/10 border border-blue-600/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div>
                 <div className="flex items-center space-x-2">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white uppercase tracking-wider">
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white uppercase tracking-wider backdrop-blur-xs">
                     Corridor Schedule
                   </span>
-                  <span className="text-xs text-slate-300 font-medium">Bidar ⇄ Hyderabad (NH 65)</span>
+                  <span className="text-xs text-blue-100 font-medium">Bidar ⇄ Hyderabad (NH 65)</span>
                 </div>
                 <h2 className="text-lg font-bold text-white mt-1">Ready for your next scheduled highway trip?</h2>
-                <p className="text-xs text-slate-400 mt-0.5">
+                <p className="text-xs text-blue-100 mt-0.5">
                   Publish your departure in seconds. Fares are locked at ₹310/seat with guaranteed passenger manifests.
                 </p>
               </div>
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setActiveTab("PUBLISH")}
-                  className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm flex items-center space-x-2"
+                  className="px-5 py-2.5 bg-white hover:bg-slate-50 text-blue-700 font-bold text-xs rounded-xl transition-all shadow-sm flex items-center space-x-2 cursor-pointer"
                 >
-                  <PlusCircle className="w-4 h-4" />
+                  <PlusCircle className="w-4 h-4 text-blue-600" />
                   <span>Publish New Ride</span>
                 </button>
                 <button
                   onClick={() => setActiveTab("RIDES")}
-                  className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs rounded-xl border border-slate-700 transition-all"
+                  className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white font-bold text-xs rounded-xl border border-white/20 transition-all cursor-pointer"
                 >
                   View My Rides
                 </button>
@@ -732,16 +975,43 @@ export default function DriverPortalPage() {
                       <ClipboardList className="w-4 h-4" />
                       <span>View Passenger Manifest</span>
                     </button>
-                    <button
-                      onClick={() => {
-                        const next = rides[0].status === "SCHEDULED" ? "EN_ROUTE" : rides[0].status === "EN_ROUTE" ? "TRIP_STARTED" : "COMPLETED";
-                        handleUpdateStatus(rides[0].ride_id, next);
-                      }}
-                      className="w-full py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl transition-all border border-slate-200 flex items-center justify-center space-x-2"
-                    >
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>Advance Status: {rides[0].status}</span>
-                    </button>
+                    {rides[0].status === "SCHEDULED" && (
+                      <button
+                        onClick={() => handleUpdateStatus(rides[0].ride_id, "EN_ROUTE")}
+                        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2"
+                      >
+                        <Car className="w-4 h-4 text-white" />
+                        <span>Start Driving (En Route to Pickup)</span>
+                      </button>
+                    )}
+                    {rides[0].status === "EN_ROUTE" && (
+                      <button
+                        onClick={() => handleUpdateStatus(rides[0].ride_id, "TRIP_STARTED")}
+                        className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span>All Passengers Boarded (Start Trip)</span>
+                      </button>
+                    )}
+                    {rides[0].status === "TRIP_STARTED" && (
+                      <button
+                        onClick={() => handleUpdateStatus(rides[0].ride_id, "COMPLETED")}
+                        className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center justify-center space-x-2"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-white" />
+                        <span>Trip Ended (Complete Journey)</span>
+                      </button>
+                    )}
+                    {rides[0].status === "COMPLETED" && (
+                      <button
+                        onClick={() => handleRequestPayout(rides[0].ride_id)}
+                        disabled={payoutLoading}
+                        className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-md shadow-emerald-600/20 flex items-center justify-center space-x-2"
+                      >
+                        <Wallet className="w-4 h-4 text-white" />
+                        <span>{payoutLoading ? "Processing Escrow..." : "Trip Ended - Request Payout"}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -754,7 +1024,40 @@ export default function DriverPortalPage() {
         )}
 
         {/* TAB 2: PUBLISH RIDE */}
-        {activeTab === "PUBLISH" && (
+        {activeTab === "PUBLISH" && !isAuthenticated ? (
+          <div className="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200 p-8 text-center shadow-lg space-y-5">
+            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto border border-blue-100 shadow-sm">
+              <Car className="w-8 h-8" />
+            </div>
+            <div className="space-y-2">
+              <h2 className="text-xl font-black text-slate-900 tracking-tight">
+                Driver Authentication Required to Offer Seats
+              </h2>
+              <p className="text-sm text-slate-600 max-w-md mx-auto leading-relaxed">
+                To offer and publish empty seats on the Bidar ⇄ Hyderabad corridor, you must be logged in with a registered driver account, verified driving licence, and active email.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm rounded-xl shadow-md shadow-blue-600/25 transition-all flex items-center justify-center gap-2"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span>Register as Driver (Enter Email & Licence)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="py-3 px-5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs sm:text-sm rounded-xl transition-colors flex items-center justify-center gap-2"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>Sign In to Existing Account</span>
+              </button>
+            </div>
+          </div>
+        ) : activeTab === "PUBLISH" && (
           <div className="max-w-2xl mx-auto bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-xs">
             <div className="pb-6 border-b border-slate-100">
               <div className="flex items-center space-x-2.5">
@@ -862,39 +1165,115 @@ export default function DriverPortalPage() {
                 </div>
               </div>
 
-              {/* Vehicle Selection & Available Seats */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Fleet Vehicle <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={pubVehicleId}
-                    onChange={(e) => setPubVehicleId(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    {vehicles.map((v) => (
-                      <option key={v.vehicle_id} value={v.vehicle_id}>
-                        {v.make} {v.model} ({v.registration_number})
-                      </option>
-                    ))}
-                  </select>
+              {/* Vehicle Details: Directly Type Car Company, Model & Number */}
+              <div className="space-y-4">
+                {vehicles.length > 0 && (
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                    <label className="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                      Or Autofill from Saved Fleet
+                    </label>
+                    <select
+                      value={pubVehicleId}
+                      onChange={(e) => {
+                        const selId = e.target.value;
+                        setPubVehicleId(selId);
+                        const found = vehicles.find((v) => v.vehicle_id === selId);
+                        if (found) {
+                          setPubVehicleMake(found.make);
+                          setPubVehicleModel(found.model);
+                          setPubVehicleReg(found.registration_number);
+                          setPubVehicleFuel(found.fuel_type);
+                        }
+                      }}
+                      className="w-full px-3 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="">-- Type new car details below or pick saved vehicle --</option>
+                      {vehicles.map((v) => (
+                        <option key={v.vehicle_id} value={v.vehicle_id}>
+                          {v.make} {v.model} ({v.registration_number})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Car Company / Make <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Hyundai, Maruti Suzuki, Tata"
+                      value={pubVehicleMake}
+                      onChange={(e) => setPubVehicleMake(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Car Model <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Creta, Ertiga, Swift, Nexon"
+                      value={pubVehicleModel}
+                      onChange={(e) => setPubVehicleModel(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Offered Seats <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    value={pubSeats}
-                    onChange={(e) => setPubSeats(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                  >
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <option key={n} value={n}>
-                        {n} {n === 1 ? "seat" : "seats"}
-                      </option>
-                    ))}
-                  </select>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Vehicle Number <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. KA 38 M 5678"
+                      value={pubVehicleReg}
+                      onChange={(e) => setPubVehicleReg(e.target.value.toUpperCase())}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 uppercase focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Fuel Type
+                    </label>
+                    <select
+                      value={pubVehicleFuel}
+                      onChange={(e) => setPubVehicleFuel(e.target.value)}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="">Select Fuel Type</option>
+                      <option value="PETROL">Petrol</option>
+                      <option value="DIESEL">Diesel</option>
+                      <option value="CNG">CNG</option>
+                      <option value="EV">Electric (EV)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Offered Seats <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      required
+                      value={pubSeats}
+                      onChange={(e) => setPubSeats(e.target.value ? Number(e.target.value) : "")}
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                    >
+                      <option value="">Select Offered Seats</option>
+                      {[1, 2, 3, 4, 5, 6].map((n) => (
+                        <option key={n} value={n}>
+                          {n} {n === 1 ? "seat" : "seats"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -908,8 +1287,8 @@ export default function DriverPortalPage() {
                   Per Bidar Connect Invariant Rules, all passenger fares are centrally fixed. Drivers do not set or surge prices.
                 </p>
                 <div className="pt-2 flex justify-between text-xs font-mono font-bold text-slate-800 border-t border-blue-100">
-                  <span>Gross Fare Potential ({pubSeats} seats):</span>
-                  <span>₹{pubSeats * 310}</span>
+                  <span>Gross Fare Potential ({pubSeats || 0} seats):</span>
+                  <span>₹{(Number(pubSeats) || 0) * 310}</span>
                 </div>
               </div>
 
@@ -1026,7 +1405,7 @@ export default function DriverPortalPage() {
                         </div>
 
                         {/* Status Transition Stepper */}
-                        {!isCompleted && (
+                        {!isCompleted ? (
                           <div className="flex items-center space-x-2">
                             <span className="text-[11px] text-slate-500 font-medium">Update Status:</span>
                             {["SCHEDULED", "EN_ROUTE", "TRIP_STARTED", "COMPLETED"].map((st) => (
@@ -1044,6 +1423,15 @@ export default function DriverPortalPage() {
                               </button>
                             ))}
                           </div>
+                        ) : (
+                          <button
+                            onClick={() => handleRequestPayout(ride.ride_id)}
+                            disabled={payoutLoading}
+                            className="px-3.5 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs rounded-xl transition-all shadow-xs flex items-center space-x-1.5"
+                          >
+                            <Wallet className="w-3.5 h-3.5 text-white" />
+                            <span>Request Payout Settlement</span>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -1206,7 +1594,7 @@ export default function DriverPortalPage() {
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Total Gross Fare</span>
                 <span className="text-2xl font-black text-slate-900 mt-2 block">
-                  ₹{earnings?.total_gross_earnings.toFixed(0) || "1,860"}
+                  ₹{earnings?.total_gross_earnings != null ? earnings.total_gross_earnings.toFixed(0) : "0"}
                 </span>
                 <span className="text-[11px] text-slate-500 mt-1 block">From confirmed corridor rides</span>
               </div>
@@ -1214,7 +1602,7 @@ export default function DriverPortalPage() {
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Platform Commission</span>
                 <span className="text-2xl font-black text-slate-900 mt-2 block">
-                  ₹{earnings?.total_platform_commission.toFixed(0) || "120"}
+                  ₹{earnings?.total_platform_commission != null ? earnings.total_platform_commission.toFixed(0) : "0"}
                 </span>
                 <span className="text-[11px] text-slate-500 mt-1 block">Fixed ₹20/seat platform fee</span>
               </div>
@@ -1222,7 +1610,7 @@ export default function DriverPortalPage() {
               <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-xs">
                 <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Net Payable to Driver</span>
                 <span className="text-2xl font-black text-blue-600 mt-2 block">
-                  ₹{earnings?.total_net_payout.toFixed(0) || "1,740"}
+                  ₹{earnings?.total_net_payout != null ? earnings.total_net_payout.toFixed(0) : "0"}
                 </span>
                 <span className="text-[11px] text-emerald-600 font-semibold mt-1 block">Cleared upon trip arrival</span>
               </div>
@@ -1385,7 +1773,25 @@ export default function DriverPortalPage() {
 
                     <div className="pt-2 border-t border-slate-200 flex items-center justify-between text-xs">
                       <span className="text-slate-500 font-mono">Ref: {p.reference_code}</span>
-                      <span className="font-bold text-emerald-700">₹{p.fare_amount.toFixed(0)} ({p.payment_status})</span>
+                      <div className="flex items-center gap-2">
+                        {p.booking_status === "BOARDED" ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 text-[11px] font-bold border border-emerald-300">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Boarded & Verified</span>
+                          </span>
+                        ) : p.booking_status !== "CANCELLED" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleVerifyBoarding(selectedRideForManifest.ride_id, p.booking_id, p.reference_code)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold transition-all shadow-xs"
+                            title="Verify passenger 4-digit code and mark boarded"
+                          >
+                            <ShieldCheck className="w-3 h-3" />
+                            <span>Verify Boarding</span>
+                          </button>
+                        ) : null}
+                        <span className="font-bold text-emerald-700">₹{p.fare_amount.toFixed(0)} ({p.payment_status})</span>
+                      </div>
                     </div>
 
                     {p.emergency_contact && (
@@ -1540,6 +1946,123 @@ export default function DriverPortalPage() {
                 <span>{vSubmitting ? "Registering Vehicle..." : "Save Vehicle to Fleet"}</span>
               </button>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* PAYOUT SETTLEMENT & ESCROW CLEARING MODAL */}
+      {activePayoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="bg-slate-900 px-6 py-4 text-white flex items-center justify-between border-b border-slate-800">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-emerald-600/20 text-emerald-400 rounded-xl border border-emerald-500/30">
+                  <Wallet className="w-5 h-5 text-emerald-400" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">Trip Payout & Bank Settlement</h3>
+                  <p className="text-xs text-slate-400">NH 65 Motor Vehicles Act Non-Commercial Clearing</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setActivePayoutModal(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 text-xs">
+              {/* Financial Split Breakdown */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
+                <div className="flex justify-between text-slate-600">
+                  <span>Gross Passenger Fares ({activePayoutModal.total_seats_booked || 3} seats @ ₹310):</span>
+                  <span className="font-semibold text-slate-900">₹{activePayoutModal.gross_amount || 930}</span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>Platform Operations Fee (₹20/seat):</span>
+                  <span className="font-semibold text-red-600">-₹{activePayoutModal.commission_deducted || 60}</span>
+                </div>
+                <div className="pt-2 border-t border-slate-200 flex justify-between font-bold text-sm text-slate-900">
+                  <span>Net Driver Settlement:</span>
+                  <span className="text-emerald-700 text-base">₹{activePayoutModal.net_payable || 870}</span>
+                </div>
+              </div>
+
+              {/* Status Display: Either settled with Bank UTR or Safety Delay Countdown */}
+              {(activePayoutModal.status === "SETTLED" || activePayoutModal.settled_payout || activePayoutModal.payout_reference_utr) ? (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-2 text-center">
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <h4 className="font-bold text-emerald-900 text-sm">Settlement Disbursed Successfully!</h4>
+                  <p className="text-emerald-800 text-[11px]">
+                    Net earnings of <strong>INR {activePayoutModal.net_payable || activePayoutModal.settled_payout?.net_amount || 870}</strong> transferred via IMPS.
+                  </p>
+                  <div className="bg-white p-2 rounded-lg border border-emerald-300 font-mono text-[11px] text-emerald-900">
+                    Bank UTR: <strong>{activePayoutModal.payout_reference_utr || activePayoutModal.settled_payout?.bank_utr || "UTR-20261104-9842"}</strong>
+                  </div>
+                  <p className="text-[10px] text-slate-500">
+                    Credited to HDFC Bank A/C ****4120 &bull; Statutory 5-Min Clearing Confirmed
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
+                      Transfer Destination
+                    </span>
+                    <p className="text-xs font-semibold text-slate-800">
+                      HDFC Bank Ltd &bull; A/C: XXXX-XXXX-4120 (IFSC: HDFC0001234)
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      UPI ID: {activePayoutModal.upi_id || "drv_101@okaxis"}
+                    </p>
+                  </div>
+
+                  {safetyBufferSeconds > 0 ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-center space-y-1.5">
+                      <span className="text-[10px] font-bold text-amber-800 uppercase tracking-wider block">
+                        Admin Audit & Automated 5-Minute Clearing
+                      </span>
+                      <div className="text-2xl font-black font-mono text-amber-900">
+                        {Math.floor(safetyBufferSeconds / 60).toString().padStart(2, "0")}:
+                        {(safetyBufferSeconds % 60).toString().padStart(2, "0")}
+                      </div>
+                      <p className="text-[11px] text-amber-700 leading-relaxed">
+                        Payment request queued. Admin is reviewing passenger manifest. Automation engine will transfer funds directly to your bank account within 5 minutes or immediately upon Admin approval.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="p-3 bg-blue-50 border border-blue-200 rounded-xl text-blue-800 text-[11px] text-center">
+                      5-minute window complete. Processing instant bank clearing...
+                    </div>
+                  )}
+
+                  <div className="flex gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleRequestPayout(activePayoutModal.ride_id, true)}
+                      disabled={payoutLoading}
+                      className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Wallet className="w-4 h-4" />
+                      <span>{payoutLoading ? "Disbursing IMPS..." : "Disburse Immediate Settlement (Admin Bypass)"}</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => setActivePayoutModal(null)}
+                  className="text-xs text-slate-500 hover:text-slate-800 font-medium"
+                >
+                  Close Window
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

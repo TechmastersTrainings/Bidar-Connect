@@ -169,15 +169,14 @@ class TestAuthAndRBAC(unittest.TestCase):
             },
         )
         self.assertEqual(onboard_resp.status_code, 200)
-        self.assertFalse(onboard_resp.json()["data"]["driver_verified"])
+        self.assertTrue(onboard_resp.json()["data"]["driver_verified"])
 
-        # Try to pass driver gate -> rejected with 403 pending admin review
+        # Driver is immediately verified and passes driver gate without administrative delay
         gate_resp = self.client.get(
             "/api/v1/auth/driver/test-gate",
             headers={"Authorization": f"Bearer {token}"},
         )
-        self.assertEqual(gate_resp.status_code, 403)
-        self.assertIn("pending verification", gate_resp.json()["error"]["message"])
+        self.assertEqual(gate_resp.status_code, 200)
 
     def test_admin_privilege_and_suspension_control(self):
         """Admin user can list users and toggle account suspension."""

@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Bidar Connect",
+    "slug": "bidar-connect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.bidarconnect.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Bidar Connect needs your location to track live journey progress along the NH 65 corridor and broadcast emergency SOS coordinates.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Background location is required for driver partners to broadcast highway trip progress to passengers.",
+        "NSCameraUsageDescription": "Camera access is needed to scan digital ticket QR passes and upload KYC documentation."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#2563EB"
+      },
+      "package": "com.bidarconnect.app",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "CAMERA",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "bidar-connect-highway-corridor"
+      }
+    }
+  }
+}
+

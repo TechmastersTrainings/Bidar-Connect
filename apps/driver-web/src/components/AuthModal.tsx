@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import {
   X,
@@ -31,6 +31,9 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
+  const [vehicleMakeModel, setVehicleMakeModel] = useState("");
+  const [vehicleReg, setVehicleReg] = useState("");
+  const [licenceNumber, setLicenceNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [suggestedOtp, setSuggestedOtp] = useState<string | null>(null);
 
@@ -38,7 +41,24 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (isOpen) {
+      setMode(initialMode);
+      setStep("FORM");
+      setError(null);
+      setOtp("");
+      setSuggestedOtp(null);
+    }
+  }, [isOpen, initialMode]);
+
   if (!isOpen) return null;
+
+  const getApiBase = () => {
+    if (typeof window !== "undefined" && window.location.hostname) {
+      return `http://${window.location.hostname}:8000/api/v1`;
+    }
+    return "http://127.0.0.1:8000/api/v1";
+  };
 
   const resetForm = (newMode: "LOGIN" | "REGISTER") => {
     setMode(newMode);
@@ -58,9 +78,23 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
       return;
     }
 
-    if (mode === "REGISTER" && !fullName.trim()) {
-      setError("Full legal name as per Driving Licence is required.");
-      return;
+    if (mode === "REGISTER") {
+      if (!fullName.trim()) {
+        setError("Full legal name as per Driving Licence is required.");
+        return;
+      }
+      if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        setError("A valid email address is mandatory for driver payouts and KYC statements.");
+        return;
+      }
+      if (!vehicleReg.trim()) {
+        setError("Vehicle registration plate number is required.");
+        return;
+      }
+      if (!licenceNumber.trim()) {
+        setError("Valid Driving Licence number is required.");
+        return;
+      }
     }
 
     setLoading(true);
@@ -94,12 +128,60 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
 
     setLoading(true);
     const cleanPhone = phone.trim().replace(/\s+/g, "");
-    const res = await verifyOtp(cleanPhone, otp, mode === "REGISTER" ? fullName : undefined, email || undefined);
+    const res = await verifyOtp(cleanPhone, otp, mode === "REGISTER" ? fullName.trim() : undefined, email.trim() || undefined);
     setLoading(false);
 
     if (!res.success) {
       setError(res.error || "Verification failed. Check the code.");
       return;
+    }
+
+    // If new registration, register licence & vehicle
+    if (mode === "REGISTER") {
+      try {
+        const storedToken = localStorage.getItem("bidar_driver_token");
+        if (storedToken) {
+          const apiBase = getApiBase();
+          // 1. Onboard licence
+          await fetch(`${apiBase}/auth/driver-onboard`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${storedToken}`,
+            },
+            body: JSON.stringify({
+              licence_number: licenceNumber.trim().toUpperCase(),
+              licence_expiry: "2029-12-31",
+              licence_document_id: `doc_licence_${Date.now()}`,
+              payout_upi_id: `${cleanPhone}@upi`,
+            }),
+          });
+
+          // 2. Register vehicle
+          const parts = vehicleMakeModel.trim().split(" ");
+          const make = parts[0] || "Maruti Suzuki";
+          const model = parts.slice(1).join(" ") || "Ertiga";
+
+          await fetch(`${apiBase}/driver/vehicles`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${storedToken}`,
+            },
+            body: JSON.stringify({
+              make,
+              model,
+              registration_number: vehicleReg.trim().toUpperCase(),
+              color: "Magma Grey",
+              year: 2023,
+              fuel_type: "DIESEL",
+              passenger_capacity: 4,
+            }),
+          });
+        }
+      } catch (err) {
+        console.warn("Post verify onboarding notice:", err);
+      }
     }
 
     onClose();
@@ -217,21 +299,79 @@ export function AuthModal({ isOpen, onClose, initialMode = "REGISTER" }: AuthMod
               </div>
 
               {mode === "REGISTER" && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                    Email Address (Optional)
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
-                    <input
-                      type="email"
-                      placeholder="e.g. ramesh@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
-                    />
+                <>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                      Email Address <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-3 w-4 h-4 text-slate-400" />
+                      <input
+                        type="email"
+                        placeholder="e.g. ramesh.patil@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-slate-800"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400 mt-1">Required for automated payout receipts & trip logs.</p>
                   </div>
-                </div>
+
+                  {/* Vehicle & Licence Section */}
+                  <div className="pt-2 border-t border-slate-100">
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <Car className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Vehicle & Licence Credentials
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                          Vehicle Model <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={vehicleMakeModel}
+                          onChange={(e) => setVehicleMakeModel(e.target.value)}
+                          placeholder="e.g. Ertiga / Swift"
+                          required
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-800 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                          Registration Plate <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={vehicleReg}
+                          onChange={(e) => setVehicleReg(e.target.value.toUpperCase())}
+                          placeholder="e.g. KA 38 M 4120"
+                          required
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-800 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
+                          Driving Licence Number <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={licenceNumber}
+                          onChange={(e) => setLicenceNumber(e.target.value.toUpperCase())}
+                          placeholder="e.g. KA382022004120"
+                          required
+                          className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 text-slate-800 font-mono font-bold focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
 
               {/* Action Button */}

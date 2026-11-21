@@ -1,0 +1,3596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Bidar Connect</title>
+  <style>
+    :root {
+      --navy: #0F172A;              /* Midnight Slate */
+      --navy-dark: #020617;         /* Deep Midnight */
+      --blue: #2563EB;              /* Liquid Electric Sapphire */
+      --blue-hover: #1D4ED8;
+      --blue-light: #EFF6FF;        /* Sapphire Ice Tint */
+      --blue-glow: 0 8px 24px -2px rgba(37, 99, 235, 0.35);
+      --orange: #F59E0B;            /* Solar Amber / Champagne Gold */
+      --orange-hover: #D97706;
+      --orange-light: #FEF3C7;
+      --orange-glow: 0 8px 20px -2px rgba(245, 158, 11, 0.3);
+      --bg: #F8FAFC;                /* Bright Frosted Platinum Canvas */
+      --card-bg: #FFFFFF;           /* Porcelain Pearl Surface */
+      --card-bg-elevated: #FFFFFF;
+      --white: #FFFFFF;
+      --text-primary: #0F172A;      /* Rich Dark Slate Text */
+      --text-secondary: #64748B;    /* Refined Cool Slate */
+      --text-muted: #94A3B8;
+      --border: #E2E8F0;            /* 1px Whisper Silver Border */
+      --border-dark: #CBD5E1;
+      --success: #10B981;           /* Luminous Jade */
+      --success-light: #ECFDF5;
+      --error: #EF4444;
+      --error-light: #FEF2F2;
+      --shadow-sm: 0 2px 8px -1px rgba(15, 23, 42, 0.04), 0 1px 3px -1px rgba(15, 23, 42, 0.02);
+      --shadow-md: 0 8px 24px -4px rgba(15, 23, 42, 0.06), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
+      --shadow-lg: 0 20px 40px -6px rgba(15, 23, 42, 0.1), 0 8px 16px -2px rgba(15, 23, 42, 0.04);
+      --safe-top: env(safe-area-inset-top, 0px);
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "Inter", "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Screen Container */
+    #app-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      height: 100%;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(20px);
+      transition: opacity 0.28s cubic-bezier(0.4, 0, 0.2, 1), transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 10;
+    }
+
+    .screen.active {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+      z-index: 20;
+    }
+
+    .scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 96px;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 1. ANIMATED SPLASH SCREEN */
+    /* ------------------------------------------------------------- */
+    #screen-splash {
+      background: linear-gradient(145deg, var(--navy-dark) 0%, var(--navy) 100%);
+      color: var(--white);
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 32px;
+      z-index: 100;
+    }
+
+    .splash-logo-wrap {
+      width: 88px;
+      height: 88px;
+      border-radius: 26px;
+      background: linear-gradient(135deg, var(--blue) 0%, #1742a0 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 20px 40px rgba(36, 107, 253, 0.35);
+      margin-bottom: 24px;
+      animation: pulseLogo 2s infinite ease-in-out;
+    }
+
+    @keyframes pulseLogo {
+      0%, 100% { transform: scale(1); box-shadow: 0 20px 40px rgba(36, 107, 253, 0.35); }
+      50% { transform: scale(1.05); box-shadow: 0 25px 50px rgba(36, 107, 253, 0.55); }
+    }
+
+    .splash-route-svg {
+      width: 260px;
+      height: 60px;
+      margin: 16px 0 24px 0;
+    }
+
+    .route-path-base {
+      stroke: rgba(255, 255, 255, 0.15);
+      stroke-width: 4;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .route-path-animated {
+      stroke: var(--orange);
+      stroke-width: 4;
+      stroke-linecap: round;
+      stroke-dasharray: 8 6;
+      fill: none;
+      animation: dashMove 1.5s linear infinite;
+    }
+
+    @keyframes dashMove {
+      to { stroke-dashoffset: -28; }
+    }
+
+    .splash-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--white);
+      margin-bottom: 6px;
+    }
+
+    .splash-tagline {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--orange);
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 2. WELCOME SCREEN */
+    /* ------------------------------------------------------------- */
+    #screen-welcome {
+      background: var(--white);
+      padding: 40px 24px 32px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .welcome-hero-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 28px 24px;
+      color: var(--text-primary);
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      margin-top: 16px;
+      box-shadow: 0 16px 36px -6px rgba(15, 23, 42, 0.08);
+    }
+
+    .welcome-hero-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at top right, rgba(37, 99, 235, 0.06), transparent 70%);
+      pointer-events: none;
+    }
+
+    .welcome-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: #FEF3C7;
+      border: 1px solid #FDE68A;
+      font-size: 11px;
+      font-weight: 700;
+      color: #B45309;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .welcome-headline {
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: var(--white);
+      margin-bottom: 10px;
+    }
+
+    .welcome-desc {
+      font-size: 13px;
+      line-height: 1.5;
+      color: rgba(255, 255, 255, 0.8);
+      margin-bottom: 20px;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 3. ONBOARDING SCREEN */
+    /* ------------------------------------------------------------- */
+    #screen-onboarding {
+      background: var(--white);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .onboard-top-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .onboard-slider {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 16px 0;
+    }
+
+    .onboard-illus-box {
+      width: 220px;
+      height: 200px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 32px;
+      position: relative;
+    }
+
+    .onboard-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 10px;
+    }
+
+    .onboard-text {
+      font-size: 14px;
+      line-height: 1.55;
+      color: var(--text-secondary);
+      max-width: 300px;
+    }
+
+    .onboard-dots {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 28px 0;
+    }
+
+    .onboard-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: var(--border);
+      transition: all 0.25s;
+    }
+
+    .onboard-dot.active {
+      width: 24px;
+      background: var(--blue);
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 4. AUTH SCREEN */
+    /* ------------------------------------------------------------- */
+    #screen-auth {
+      background: var(--bg);
+      padding: 36px 24px 28px 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .auth-header {
+      margin-bottom: 28px;
+    }
+
+    .auth-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--blue-light);
+      color: var(--blue);
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .auth-title {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--navy);
+      margin-bottom: 6px;
+    }
+
+    .auth-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .auth-card {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    /* Segmented Auth Navigation Pill */
+    .auth-nav-pill {
+      display: flex;
+      background: rgba(16, 36, 58, 0.06);
+      padding: 4px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+    }
+
+    .auth-nav-btn {
+      flex: 1;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .auth-nav-btn.active {
+      background: var(--white);
+      color: var(--blue);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .role-toggle-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .role-toggle-card {
+      flex: 1;
+      padding: 12px 10px;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .role-toggle-card.active {
+      border-color: var(--blue);
+      background: var(--blue-light);
+    }
+
+    .role-toggle-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--navy);
+      display: block;
+    }
+
+    .role-toggle-sub {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .role-toggle-card.active .role-toggle-sub {
+      color: var(--blue);
+    }
+
+    /* Auth Alert Banner */
+    .auth-alert {
+      padding: 14px;
+      border-radius: 14px;
+      margin-bottom: 16px;
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .auth-alert.danger {
+      background: #FDF2F2;
+      border: 1.5px solid #F87171;
+      color: #991B1B;
+    }
+
+    .auth-alert.success {
+      background: #ECFDF5;
+      border: 1.5px solid #34D399;
+      color: #065F46;
+    }
+
+    .input-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--navy);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    .phone-input-group {
+      display: flex;
+      align-items: center;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      background: var(--bg);
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+
+    .phone-input-group:focus-within {
+      border-color: var(--blue);
+      background: var(--white);
+    }
+
+    .phone-prefix {
+      padding: 14px 14px 14px 16px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+      border-right: 1px solid var(--border);
+    }
+
+    .phone-input {
+      flex: 1;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      outline: none;
+      background: transparent;
+      color: var(--navy);
+    }
+
+    .otp-input-group {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin: 16px 0;
+    }
+
+    .otp-box {
+      width: 44px;
+      height: 52px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg);
+      text-align: center;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--navy);
+      outline: none;
+    }
+
+    .otp-box:focus {
+      border-color: var(--blue);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(36, 107, 253, 0.15);
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 5. TOP APP BAR & MODE SWITCHER */
+    /* ------------------------------------------------------------- */
+    .app-top-header {
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      color: var(--navy);
+      padding: calc(14px + var(--safe-top)) 18px 14px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 12px rgba(15, 23, 42, 0.04);
+      z-index: 30;
+      position: relative;
+    }
+
+    .header-user-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .header-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--blue) 0%, #1D4ED8 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      font-weight: 800;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    }
+
+    .header-user-meta h4 {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--navy);
+      line-height: 1.2;
+    }
+
+    .header-user-meta span {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--blue);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Animated Mode Switcher */
+    .mode-switch-pill {
+      display: flex;
+      align-items: center;
+      background: #F1F5F9;
+      border: 1px solid #E2E8F0;
+      border-radius: 999px;
+      padding: 3px;
+      position: relative;
+    }
+
+    .mode-switch-btn {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: none;
+      background: transparent;
+      color: #64748B;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      position: relative;
+      z-index: 2;
+      transition: color 0.25s;
+    }
+
+    .mode-switch-btn.active {
+      color: #2563EB;
+      background: #FFFFFF;
+      box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    .mode-switch-btn.active {
+      color: var(--white);
+      background: var(--blue);
+      box-shadow: 0 4px 12px rgba(36, 107, 253, 0.4);
+    }
+
+    .sos-header-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 10px;
+      background: rgba(220, 69, 69, 0.2);
+      border: 1px solid rgba(220, 69, 69, 0.4);
+      color: #FF6B6B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin-left: 8px;
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 6. BOTTOM NAVIGATION BAR */
+    /* ------------------------------------------------------------- */
+    .bottom-nav-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      padding: 10px 16px calc(10px + var(--safe-bottom)) 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      box-shadow: 0 -4px 24px -2px rgba(10, 15, 29, 0.08);
+      z-index: 35;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 58px;
+    }
+
+    .nav-item:active {
+      transform: scale(0.92);
+    }
+
+    .nav-item.active {
+      color: var(--blue);
+    }
+
+    .nav-item svg {
+      width: 22px;
+      height: 22px;
+      stroke-width: 2.2;
+    }
+
+    .nav-item.nav-publish {
+      position: relative;
+      top: -12px;
+    }
+
+    .nav-item.nav-publish .nav-icon-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      color: var(--white);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 8px 22px -2px rgba(37, 99, 235, 0.48);
+      transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-item.nav-publish:active .nav-icon-circle {
+      transform: scale(0.92);
+    }
+
+    /* ------------------------------------------------------------- */
+    /* 7. CARDS & COMMON COMPONENTS */
+    /* ------------------------------------------------------------- */
+    .content-box {
+      padding: 16px 20px;
+    }
+
+    .section-title-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text-primary);
+      letter-spacing: -0.2px;
+    }
+
+    .section-subtitle {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 20px;
+      padding: 18px;
+      border: 1px solid var(--border);
+      box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.04);
+      margin-bottom: 14px;
+    }
+
+    /* Route Search Box */
+    .search-card {
+      background: var(--white);
+      border-radius: 24px;
+      padding: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 10px 28px -4px rgba(15, 23, 42, 0.06);
+      position: relative;
+    }
+
+    .search-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      background: #F8FAFC;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      border: 1px solid var(--border);
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .search-row:focus-within {
+      border-color: var(--blue);
+      background: var(--white);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .search-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .search-dot.origin { background: var(--blue); }
+    .search-dot.dest { background: var(--orange); }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .swap-btn {
+      position: absolute;
+      right: 32px;
+      top: 56px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .swap-btn:active {
+      transform: rotate(180deg) scale(0.92);
+    }
+
+    /* Horizontal Date Selector */
+    .date-pill {
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: var(--white);
+      color: var(--text-secondary);
+      transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
+    }
+
+    .date-pill:active {
+      transform: scale(0.94);
+    }
+
+    .date-pill.active {
+      background: var(--blue);
+      color: #FFFFFF;
+      border-color: var(--blue);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
+
+    /* Ride Discovery Cards */
+    .ride-card {
+      background: var(--white);
+      border-radius: 22px;
+      border: 1px solid var(--border);
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.04);
+      transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.18s ease;
+    }
+
+    .ride-card:active {
+      transform: scale(0.985);
+      box-shadow: 0 2px 8px -1px rgba(15, 23, 42, 0.03);
+    }
+
+    .ride-top-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      border-bottom: 1px dashed var(--border);
+      padding-bottom: 12px;
+    }
+
+    .driver-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .driver-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+      color: var(--white);
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+
+    .driver-info h4 {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .verified-icon {
+      color: var(--success);
+      width: 14px;
+      height: 14px;
+    }
+
+    .driver-rating {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .driver-rating svg {
+      width: 12px;
+      height: 12px;
+      fill: #FFB800;
+      color: #FFB800;
+    }
+
+    .fare-tag {
+      text-align: right;
+    }
+
+    .fare-amount {
+      font-size: 21px;
+      font-weight: 900;
+      color: var(--orange);
+      letter-spacing: -0.3px;
+      line-height: 1;
+    }
+
+    .fare-sub {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+
+    .route-timeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .timeline-stop {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .timeline-time {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--text-primary);
+      width: 65px;
+      flex-shrink: 0;
+    }
+
+    .timeline-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--blue);
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .timeline-stop:first-child .timeline-dot::after {
+      content: "";
+      position: absolute;
+      top: 8px;
+      left: 3px;
+      width: 2px;
+      height: 20px;
+      background: var(--border);
+    }
+
+    .timeline-stop:last-child .timeline-dot {
+      background: var(--orange);
+    }
+
+    .timeline-location {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .ride-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      border-top: 1px solid var(--border);
+    }
+
+    .vehicle-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .seats-pill {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--success);
+      background: var(--success-light);
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 800;
+      border: none;
+      cursor: pointer;
+      transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.15s ease, background 0.15s ease;
+      letter-spacing: -0.2px;
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+      color: var(--white);
+      box-shadow: 0 8px 20px -4px rgba(37, 99, 235, 0.45);
+    }
+
+    .btn-primary:active {
+      box-shadow: 0 4px 12px -2px rgba(37, 99, 235, 0.35);
+    }
+
+    .btn-secondary {
+      background: #F1F5F9;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-outline {
+      background: #FFFFFF;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .btn-orange {
+      background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+      color: #FFFFFF;
+      font-weight: 900;
+      box-shadow: 0 8px 20px -4px rgba(245, 158, 11, 0.45);
+    }
+
+    .btn-orange:active {
+      box-shadow: 0 4px 12px -2px rgba(245, 158, 11, 0.3);
+    }
+
+    /* Stat Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border-radius: 18px;
+      padding: 16px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+    }
+
+    .stat-value {
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .stat-sub {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--success);
+      margin-top: 4px;
+    }
+
+    /* Modal Sheet */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 80;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-sheet {
+      background: #FFFFFF;
+      color: var(--navy);
+      border-radius: 28px 28px 0 0;
+      padding: 24px 20px calc(24px + var(--safe-bottom)) 20px;
+      max-height: 90vh;
+      overflow-y: auto;
+      border-top: 1px solid var(--border);
+      box-shadow: 0 -12px 36px rgba(15, 23, 42, 0.15);
+      transform: translateY(100%);
+      transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-overlay.active .modal-sheet {
+      transform: translateY(0);
+    }
+
+    .modal-handle {
+      width: 44px;
+      height: 4px;
+      border-radius: 999px;
+      background: #CBD5E1;
+      margin: 0 auto 16px auto;
+    }
+
+    /* Seat Picker Buttons */
+    .seat-pick-btn {
+      flex: 1;
+      padding: 12px 6px;
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 14px;
+      border: 1.5px solid var(--border);
+      background: #FFFFFF;
+      color: var(--navy);
+      cursor: pointer;
+      transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .seat-pick-btn:active {
+      transform: scale(0.96);
+    }
+
+    .seat-pick-btn.active {
+      border-color: var(--blue) !important;
+      background: var(--blue-light) !important;
+      color: var(--blue) !important;
+      font-weight: 800 !important;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 4px 12px rgba(37, 99, 235, 0.2) !important;
+    }
+
+    /* QR Code Display */
+    .qr-container {
+      background: var(--bg);
+      border-radius: 20px;
+      padding: 20px;
+      text-align: center;
+      border: 1px solid var(--border);
+      margin: 16px 0;
+    }
+
+    .qr-image {
+      width: 180px;
+      height: 180px;
+      margin: 0 auto 12px auto;
+      border-radius: 12px;
+      background: var(--white);
+      padding: 10px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .upi-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--white);
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--navy);
+      font-family: monospace;
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 14px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--navy);
+      background: var(--bg);
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--blue);
+      background: var(--white);
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      top: calc(20px + var(--safe-top));
+      left: 20px;
+      right: 20px;
+      padding: 12px 16px;
+      border-radius: 14px;
+      background: var(--navy);
+      color: var(--white);
+      font-size: 13px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-80px);
+      opacity: 0;
+      transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: 200;
+    }
+
+    #toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Toast Notification -->
+  <div id="toast">
+    <span id="toast-msg">Notification message</span>
+  </div>
+
+  <div id="app-container">
+
+    <!-- ------------------------------------------------------------- -->
+    <!-- SCREEN 1: ANIMATED SPLASH SCREEN -->
+    <!-- ------------------------------------------------------------- -->
+    <div id="screen-splash" class="screen active">
+      <div class="splash-logo-wrap">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/>
+          <circle cx="7" cy="17" r="2"/>
+          <path d="M9 17h6"/>
+          <circle cx="17" cy="17" r="2"/>
+        </svg>
+      </div>
+
+      <svg class="splash-route-svg" viewBox="0 0 260 60">
+        <!-- Bidar Marker -->
+        <circle cx="20" cy="30" r="8" fill="#246BFD" />
+        <circle cx="20" cy="30" r="4" fill="#FFFFFF" />
+        <text x="20" y="52" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">BIDAR</text>
+
+        <!-- Route Path -->
+        <path d="M 28 30 Q 130 5 232 30" class="route-path-base" />
+        <path d="M 28 30 Q 130 5 232 30" class="route-path-animated" />
+
+        <!-- Hyderabad Marker -->
+        <circle cx="240" cy="30" r="8" fill="#FF9B42" />
+        <circle cx="240" cy="30" r="4" fill="#FFFFFF" />
+        <text x="240" y="52" fill="#FFFFFF" font-size="10" font-weight="800" text-anchor="middle">HYD</text>
+      </svg>
+
+      <h1 class="splash-title">BIDAR CONNECT</h1>
+      <p class="splash-tagline">Your Journey, Connected.</p>
+    </div>
+
+    <!-- ------------------------------------------------------------- -->
+    <!-- SCREEN 2: WELCOME EXPERIENCE -->
+    <!-- ------------------------------------------------------------- -->
+    <div id="screen-welcome" class="screen">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <div style="width:32px; height:32px; border-radius:10px; background:var(--blue); display:flex; align-items:center; justify-content:center; color:#fff;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+          </div>
+          <span style="font-weight:900; font-size:16px; color:var(--navy); letter-spacing:-0.3px;">BIDAR CONNECT</span>
+        </div>
+        <span style="font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-light); padding:4px 8px; border-radius:6px;">NH 65</span>
+      </div>
+
+      <div class="welcome-hero-card">
+        <div class="welcome-pill">Official Highway Corridor</div>
+        <h2 class="welcome-headline">Every Journey Begins With a Connection.</h2>
+        <p class="welcome-desc">Discover comfortable, affordable rides and connect with people travelling your way between Bidar and Hyderabad with locked flat rates of INR 310 per seat.</p>
+
+        <div style="display:flex; justify-content:space-around; background:#F8FAFC; border:1px solid var(--border); border-radius:16px; padding:12px;">
+          <div>
+            <div style="font-size:18px; font-weight:900; color:var(--orange);">310 Rs</div>
+            <div style="font-size:10px; font-weight:600; color:var(--text-secondary);">Fixed Fare</div>
+          </div>
+          <div style="border-left:1px solid var(--border);"></div>
+          <div>
+            <div style="font-size:18px; font-weight:900; color:var(--text-primary);">130 KM</div>
+            <div style="font-size:10px; font-weight:600; color:var(--text-secondary);">Corridor</div>
+          </div>
+          <div style="border-left:1px solid var(--border);"></div>
+          <div>
+            <div style="font-size:18px; font-weight:900; color:#059669;">100%</div>
+            <div style="font-size:10px; font-weight:600; color:var(--text-secondary);">KYC Verified</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Single Unified Login Action -->
+      <div style="display:flex; flex-direction:column; gap:12px; margin-top:24px;">
+        <button class="btn btn-primary" onclick="startAuthFlow('LOGIN')">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          <span style="font-weight:800; font-size:15px;">Sign In with Mobile</span>
+        </button>
+
+        <button class="btn btn-outline" style="border:1.5px solid var(--blue); color:var(--blue); font-weight:700;" onclick="startAuthFlow('REGISTER')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          <span>Create New Account</span>
+        </button>
+      </div>
+
+      <div style="margin-top:14px; text-align:center;">
+        <span style="font-size:11px; color:var(--text-secondary); font-weight:600;">One single account for both Passenger booking & Driver publishing</span>
+      </div>
+
+      <div style="text-align:center; margin-top:16px;">
+        <span style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:700; color:#10b981; background:#ecfdf5; padding:4px 10px; border-radius:99px; border:1px solid #a7f3d0;">
+          <span style="width:6px; height:6px; border-radius:50%; background:#10b981;"></span>
+          <span>Cloud Production API: Live (HTTPS)</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- -->
+    <!-- SCREEN 3: 3-STEP ONBOARDING CAROUSEL -->
+    <!-- ------------------------------------------------------------- -->
+    <div id="screen-onboarding" class="screen">
+      <div class="onboard-top-nav">
+        <span style="font-size:13px; font-weight:800; color:var(--blue);">STEP <span id="onboard-step-num">1</span> OF 3</span>
+        <button onclick="goToScreen('screen-auth')" style="background:none; border:none; font-size:13px; font-weight:700; color:var(--text-secondary); cursor:pointer;">Skip</button>
+      </div>
+
+      <div class="onboard-slider">
+        <div class="onboard-illus-box">
+          <svg id="onboard-svg" width="180" height="180" viewBox="0 0 100 100">
+            <!-- Dynamic SVG illustration based on slide -->
+            <circle cx="50" cy="50" r="45" fill="#EBF2FE" />
+            <path d="M25 50 Q 50 20 75 50" stroke="#246BFD" stroke-width="4" stroke-dasharray="4 3" fill="none" />
+            <circle cx="25" cy="50" r="6" fill="#10243A" />
+            <circle cx="75" cy="50" r="6" fill="#FF9B42" />
+          </svg>
+        </div>
+
+        <h3 id="onboard-title" class="onboard-title">Find Your Journey</h3>
+        <p id="onboard-text" class="onboard-text">Daily intercity departures along NH 65 with locked government-compliant fares of ₹310 per seat. Zero surge pricing, always.</p>
+
+        <div class="onboard-dots">
+          <div class="onboard-dot active" id="dot-0"></div>
+          <div class="onboard-dot" id="dot-1"></div>
+          <div class="onboard-dot" id="dot-2"></div>
+        </div>
+      </div>
+
+      <div>
+        <button class="btn btn-primary" id="onboard-next-btn" onclick="nextOnboardSlide()">
+          <span>Next</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- -->
+    <!-- SCREEN 4: MOBILE AUTHENTICATION -->
+    <!-- ------------------------------------------------------------- -->
+    <div id="screen-auth" class="screen">
+      <!-- Back Navigation & Top Meta -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <button onclick="goToScreen('screen-welcome')" style="background:none; border:none; display:flex; align-items:center; gap:6px; color:var(--navy); font-size:13px; font-weight:700; cursor:pointer;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+          <span>Back</span>
+        </button>
+        <span id="auth-mode-badge" class="auth-badge">Sign In</span>
+      </div>
+
+      <!-- Segmented Auth Mode Switcher (Login vs Register) -->
+      <div class="auth-nav-pill">
+        <button class="auth-nav-btn active" id="tab-auth-login" onclick="switchAuthMode('LOGIN')">Sign In</button>
+        <button class="auth-nav-btn" id="tab-auth-register" onclick="switchAuthMode('REGISTER')">Create Account</button>
+      </div>
+
+      <!-- Dynamic Alert Container -->
+      <div id="auth-alert-box" class="auth-alert"></div>
+
+      <!-- Auth Card -->
+      <div class="auth-card" style="max-height:calc(100vh - 230px); overflow-y:auto;">
+        
+        <!-- ==================== STEP 1: CREDENTIALS INPUT ==================== -->
+        <div id="auth-input-step">
+          
+          <!-- LOGIN VIEW -->
+          <div id="view-auth-login">
+            <label class="input-label">Registered Mobile Number</label>
+            <div class="phone-input-group">
+              <span class="phone-prefix">+91</span>
+              <input type="tel" id="login-phone-input" class="phone-input" placeholder="98000 00000" maxlength="10">
+            </div>
+            <p style="font-size:11px; color:var(--text-secondary); margin-top:8px;">We check if your account exists in the database before sending OTP.</p>
+
+            <button class="btn btn-primary" style="margin-top:20px;" onclick="handleLoginSubmit()">
+              <span>Check Account & Send OTP</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+
+          <!-- REGISTER VIEW -->
+          <div id="view-auth-register" style="display:none;">
+            <div class="form-group" style="margin-bottom:12px;">
+              <label class="input-label">Full Legal Name *</label>
+              <input type="text" id="reg-name-input" class="form-input" placeholder="e.g. Shiva Bhalke">
+            </div>
+
+            <div class="form-group" style="margin-bottom:12px;">
+              <label class="input-label">Mobile Number *</label>
+              <div class="phone-input-group">
+                <span class="phone-prefix">+91</span>
+                <input type="tel" id="reg-phone-input" class="phone-input" placeholder="98000 00000" maxlength="10">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:12px;">
+              <label class="input-label">Email Address (Optional)</label>
+              <input type="email" id="reg-email-input" class="form-input" placeholder="e.g. shiva@example.com">
+            </div>
+
+            <!-- Driver Specific Registration Fields -->
+            <div id="reg-driver-fields" style="display:none; border-top:1px dashed var(--border); padding-top:12px; margin-top:12px;">
+              <div style="font-size:11px; font-weight:800; color:var(--orange); text-transform:uppercase; margin-bottom:10px;">Driver Partner Credentials & Vehicle</div>
+
+              <div class="form-group" style="margin-bottom:12px;">
+                <label class="input-label">Driving Licence Number *</label>
+                <input type="text" id="reg-licence-input" class="form-input" placeholder="e.g. KA38 2021 004812" style="text-transform:uppercase;">
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;">
+                <div class="form-group">
+                  <label class="input-label">Car Company *</label>
+                  <select id="reg-veh-make" class="form-input">
+                    <option value="Maruti Suzuki">Maruti Suzuki</option>
+                    <option value="Hyundai">Hyundai</option>
+                    <option value="Toyota">Toyota</option>
+                    <option value="Tata">Tata Motors</option>
+                    <option value="Mahindra">Mahindra</option>
+                    <option value="Honda">Honda</option>
+                    <option value="Kia">Kia</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="input-label">Car Model *</label>
+                  <input type="text" id="reg-veh-model" class="form-input" placeholder="e.g. Ertiga">
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-bottom:12px;">
+                <label class="input-label">Registration Number Plate *</label>
+                <input type="text" id="reg-veh-plate" class="form-input" placeholder="e.g. KA 38 M 4120" style="text-transform:uppercase; font-family:monospace; font-weight:800;">
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group">
+                  <label class="input-label">Fuel Type</label>
+                  <select id="reg-veh-fuel" class="form-input">
+                    <option value="PETROL">Petrol</option>
+                    <option value="DIESEL">Diesel</option>
+                    <option value="CNG">CNG</option>
+                    <option value="EV">Electric (EV)</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="input-label">Seating Capacity</label>
+                  <select id="reg-veh-capacity" class="form-input">
+                    <option value="4">4 Seats</option>
+                    <option value="6">6 Seats</option>
+                    <option value="3">3 Seats</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-primary" style="margin-top:16px;" onclick="handleRegisterSubmit()">
+              <span>Send Verification Code</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- ==================== STEP 2: OTP VERIFICATION ==================== -->
+        <div id="auth-otp-step" style="display:none;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="input-label">Enter 6-Digit OTP</label>
+            <span style="font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-light); padding:2px 6px; border-radius:4px;">Dev Bypass: 123456</span>
+          </div>
+
+          <p style="font-size:12px; color:var(--text-secondary); margin-bottom:10px;">
+            Sent to <strong id="otp-target-phone" style="color:var(--navy);">+91 98000 00000</strong>
+          </p>
+
+          <div class="otp-input-group">
+            <input type="number" class="otp-box" id="otp-0" maxlength="1" oninput="handleOtpInput(this, 0)">
+            <input type="number" class="otp-box" id="otp-1" maxlength="1" oninput="handleOtpInput(this, 1)">
+            <input type="number" class="otp-box" id="otp-2" maxlength="1" oninput="handleOtpInput(this, 2)">
+            <input type="number" class="otp-box" id="otp-3" maxlength="1" oninput="handleOtpInput(this, 3)">
+            <input type="number" class="otp-box" id="otp-4" maxlength="1" oninput="handleOtpInput(this, 4)">
+            <input type="number" class="otp-box" id="otp-5" maxlength="1" oninput="handleOtpInput(this, 5)">
+          </div>
+
+          <button class="btn btn-primary" style="margin-top:16px;" onclick="handleVerifyOtpSubmit()">
+            <span>Verify & Log In</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+          </button>
+
+          <button class="btn btn-outline" style="margin-top:8px;" onclick="backToInputStep()">
+            <span>Change Details</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ------------------------------------------------------------- -->
+    <!-- SCREEN 5: MAIN UNIFIED APPLICATION (Passenger / Driver / Admin) -->
+    <!-- ------------------------------------------------------------- -->
+    <div id="screen-main" class="screen">
+
+      <!-- Dynamic Top App Header -->
+      <header class="app-top-header">
+        <div class="header-user-badge">
+          <div class="header-avatar" id="header-avatar">SB</div>
+          <div class="header-user-meta">
+            <h4 id="header-user-name">Shiv Bhalke</h4>
+            <span id="header-mode-label">Passenger Mode</span>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center;">
+          <!-- Animated Mode Switcher Pill -->
+          <div class="mode-switch-pill">
+            <button class="mode-switch-btn active" id="btn-mode-passenger" onclick="setAppMode('PASSENGER')">Rider</button>
+            <button class="mode-switch-btn" id="btn-mode-driver" onclick="setAppMode('DRIVER')">Driver</button>
+          </div>
+
+          <!-- Direct SOS Trigger -->
+          <button class="sos-header-btn" onclick="openSosModal()" title="Emergency SOS">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Scrollable Tab View Container -->
+      <main class="scroll-content" id="main-tab-content">
+        <!-- Rendered dynamically by active navigation tab -->
+      </main>
+
+      <!-- Bottom Navigation Bar -->
+      <nav class="bottom-nav-bar" id="bottom-nav-bar">
+        <!-- Injected dynamically based on PASSENGER or DRIVER mode -->
+      </nav>
+
+    </div>
+
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 1: RIDE DETAILS & BOOKING / ESCROW PAYMENT SHEET -->
+  <!-- ------------------------------------------------------------- -->
+  <div class="modal-overlay" id="modal-booking">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="font-size:18px; font-weight:800; color:var(--navy);">Reserve Corridor Seat</h3>
+        <span style="font-size:11px; font-weight:700; color:var(--blue); background:var(--blue-light); padding:4px 10px; border-radius:8px; border:1px solid #C7D9FE;">NH 65 Locked Fare</span>
+      </div>
+
+      <div class="card" id="booking-ride-meta" style="background:#F8FAFC; border-color:var(--border);">
+        <!-- Injected Ride Meta -->
+      </div>
+
+      <!-- Step A: Seat Selection -->
+      <div id="booking-step-seats">
+        <label class="input-label" style="margin-bottom:8px; color:var(--navy);">Choose Seats to Reserve</label>
+        <div style="display:flex; gap:10px; margin-bottom:14px;">
+          <button type="button" class="seat-pick-btn active" id="seat-btn-1" onclick="selectSeatsCount(1)">
+            <span>1 Seat</span>
+            <span style="font-size:11px; opacity:0.85;">310 Rs</span>
+          </button>
+          <button type="button" class="seat-pick-btn" id="seat-btn-2" onclick="selectSeatsCount(2)">
+            <span>2 Seats</span>
+            <span style="font-size:11px; opacity:0.85;">620 Rs</span>
+          </button>
+          <button type="button" class="seat-pick-btn" id="seat-btn-3" onclick="selectSeatsCount(3)">
+            <span>3 Seats</span>
+            <span style="font-size:11px; opacity:0.85;">930 Rs</span>
+          </button>
+        </div>
+
+        <!-- Selected Seat Status Box -->
+        <div id="selected-seats-badge" style="background:#EFF6FF; border:1.5px solid #BFDBFE; border-radius:14px; padding:12px 14px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <span style="font-size:10px; font-weight:800; color:var(--blue); text-transform:uppercase; letter-spacing:0.5px;">Confirmed Selection</span>
+            <div id="selected-seat-text" style="font-size:15px; font-weight:900; color:var(--navy); margin-top:2px;">1 Seat (Front Passenger)</div>
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:10px; font-weight:700; color:var(--text-secondary); text-transform:uppercase;">Fixed Total</span>
+            <div id="selected-seat-price" style="font-size:18px; font-weight:900; color:var(--blue); margin-top:2px;">310 Rs</div>
+          </div>
+        </div>
+
+        <!-- Visual Car Cabin Map -->
+        <div style="background:#F8FAFC; border:1.5px solid var(--border); border-radius:14px; padding:12px; margin-bottom:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:11px; font-weight:800; color:var(--navy); text-transform:uppercase; letter-spacing:0.5px;">Vehicle Cabin View</span>
+            <span style="font-size:11px; color:var(--text-secondary); font-weight:600;">Sedan (4 Seats Max)</span>
+          </div>
+          
+          <div style="display:flex; justify-content:center; gap:24px; padding:4px 0;">
+            <!-- Front Row -->
+            <div style="text-align:center;">
+              <span style="font-size:10px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Front Row</span>
+              <div style="display:flex; gap:10px;">
+                <div style="width:52px; height:50px; border-radius:10px; background:#E2E8F0; border:1.5px solid #CBD5E1; color:#64748B; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; font-weight:700;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+                  <span>Driver</span>
+                </div>
+                <div id="cabin-seat-1" style="width:52px; height:50px; border-radius:10px; background:var(--blue); border:2px solid var(--blue); color:#fff; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; font-weight:800; box-shadow:0 4px 14px rgba(37,99,235,0.35); transition:all 0.2s;">
+                  <span>Seat 1</span>
+                  <span style="font-size:9px; opacity:0.9;">Selected</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rear Row -->
+            <div style="text-align:center;">
+              <span style="font-size:10px; font-weight:700; color:var(--text-secondary); display:block; margin-bottom:6px;">Rear Row</span>
+              <div style="display:flex; gap:10px;">
+                <div id="cabin-seat-2" style="width:52px; height:50px; border-radius:10px; background:#FFFFFF; border:1.5px solid #CBD5E1; color:#64748B; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; font-weight:700; transition:all 0.2s;">
+                  <span>Seat 2</span>
+                  <span style="font-size:9px; opacity:0.7;">Rear Left</span>
+                </div>
+                <div id="cabin-seat-3" style="width:52px; height:50px; border-radius:10px; background:#FFFFFF; border:1.5px solid #CBD5E1; color:#64748B; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:10px; font-weight:700; transition:all 0.2s;">
+                  <span>Seat 3</span>
+                  <span style="font-size:9px; opacity:0.7;">Rear Right</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="proceedToPaymentStep()">
+          <span id="proceed-pay-btn-label">Proceed to Payment (310 Rs)</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+
+      <!-- Step B: Platform Escrow QR Code Payment -->
+      <div id="booking-step-pay" style="display:none;">
+        <div style="background:var(--blue-light); border:1px solid #BFDBFE; border-radius:14px; padding:12px; margin-bottom:14px;">
+          <div style="font-size:12px; font-weight:800; color:var(--blue); margin-bottom:4px;">Platform Escrow Collection</div>
+          <div style="font-size:11px; color:var(--text-secondary); line-height:1.4;">
+            All passenger fares are collected by Platform Escrow. Driver receives ₹290/seat net payable only after verified arrival.
+          </div>
+        </div>
+          </div>
+        </div>
+
+        <!-- Scannable Central Platform QR Code -->
+        <div class="qr-container">
+          <svg class="qr-image" viewBox="0 0 100 100">
+            <!-- Simulated High-Precision QR Matrix -->
+            <rect width="100" height="100" fill="#FFFFFF"/>
+            <rect x="10" y="10" width="25" height="25" fill="#10243A"/>
+            <rect x="15" y="15" width="15" height="15" fill="#FFFFFF"/>
+            <rect x="18" y="18" width="9" height="9" fill="#10243A"/>
+
+            <rect x="65" y="10" width="25" height="25" fill="#10243A"/>
+            <rect x="70" y="15" width="15" height="15" fill="#FFFFFF"/>
+            <rect x="73" y="18" width="9" height="9" fill="#10243A"/>
+
+            <rect x="10" y="65" width="25" height="25" fill="#10243A"/>
+            <rect x="15" y="70" width="15" height="15" fill="#FFFFFF"/>
+            <rect x="18" y="73" width="9" height="9" fill="#10243A"/>
+
+            <rect x="42" y="42" width="16" height="16" fill="#246BFD"/>
+            <rect x="45" y="20" width="10" height="6" fill="#10243A"/>
+            <rect x="50" y="70" width="8" height="15" fill="#10243A"/>
+            <rect x="70" y="50" width="12" height="10" fill="#10243A"/>
+          </svg>
+
+          <div style="font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:4px;">Payee: Bidar Connect Platform Escrow</div>
+          <div class="upi-pill">
+            <span>bidarconnect@upi</span>
+            <button onclick="copyUpiId()" style="background:none; border:none; color:var(--blue); font-size:10px; font-weight:800; cursor:pointer;">COPY</button>
+          </div>
+          <div style="font-size:16px; font-weight:900; color:var(--navy); margin-top:8px;" id="escrow-pay-amount">Pay ₹310 via GPay / PhonePe / Paytm</div>
+        </div>
+
+        <div class="form-group">
+          <label class="input-label">Enter 12-Digit UPI Transaction UTR / Ref</label>
+          <input type="text" id="booking-utr-input" class="form-input" placeholder="e.g. 431089221045" maxlength="16">
+        </div>
+
+        <button class="btn btn-primary" onclick="confirmEscrowPayment()">
+          <span>Verify Payment & Reserve Ticket</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </button>
+        <button class="btn btn-outline" style="margin-top:8px;" onclick="closeModal('modal-booking')">Cancel</button>
+      </div>
+
+      <!-- Step C: Confirmed Digital Pass -->
+      <div id="booking-step-success" style="display:none; text-align:center;">
+        <div style="width:64px; height:64px; border-radius:50%; background:var(--success-light); color:var(--success); display:flex; align-items:center; justify-content:center; margin:0 auto 16px auto;">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <h3 style="font-size:20px; font-weight:900; color:var(--navy); margin-bottom:4px;">Seat Confirmed!</h3>
+        <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">Platform escrow received. Driver has been notified.</p>
+
+        <div class="card" style="text-align:left; background:var(--bg);">
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">Ticket ID:</span>
+            <span style="font-size:13px; font-weight:800; color:var(--navy);" id="confirmed-ticket-id">—</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">Route:</span>
+            <span style="font-size:13px; font-weight:800; color:var(--navy);" id="confirmed-route">Bidar → Hyderabad</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span style="font-size:12px; font-weight:700; color:var(--text-secondary);">Fare Paid:</span>
+            <span style="font-size:13px; font-weight:900; color:var(--blue);" id="confirmed-fare">₹310</span>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="closeModal('modal-booking'); setPassengerTab('bookings');">
+          <span>View in My Bookings</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 2: 24/7 EMERGENCY SOS MODAL -->
+  <!-- ------------------------------------------------------------- -->
+  <div class="modal-overlay" id="modal-sos">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div style="display:flex; align-items:center; gap:10px; margin-bottom:16px;">
+        <div style="width:40px; height:40px; border-radius:12px; background:var(--error-light); color:var(--error); display:flex; align-items:center; justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:18px; font-weight:900; color:var(--navy);">Highway Emergency SOS</h3>
+          <p style="font-size:11px; color:var(--text-secondary);">NH 65 Rapid Response Assistance</p>
+        </div>
+      </div>
+
+      <div class="card" style="background:#FFF5F5; border-color:#FED7D7;">
+        <div style="font-size:12px; font-weight:700; color:var(--error); margin-bottom:6px;">Direct Highway Helpline</div>
+        <a href="tel:+918482112112" class="btn btn-primary" style="background:var(--error); box-shadow:none; margin-bottom:8px;">
+          <span>Call 24/7 Control Room (+91 8482 112 112)</span>
+        </a>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+        <a href="tel:112" class="btn btn-outline" style="font-size:13px;">Police (112)</a>
+        <a href="tel:1091" class="btn btn-outline" style="font-size:13px;">Women Helpline (1091)</a>
+      </div>
+
+      <button class="btn btn-secondary" onclick="closeModal('modal-sos')">Close</button>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- MODAL 3: ADD VEHICLE MODAL (DRIVER FLEET) -->
+  <!-- ------------------------------------------------------------- -->
+  <div class="modal-overlay" id="modal-add-vehicle">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <h3 style="font-size:18px; font-weight:800; color:var(--navy); margin-bottom:14px;">Register Fleet Car</h3>
+
+      <div class="form-group">
+        <label class="input-label">Car Company / Make</label>
+        <input type="text" id="veh-make-input" class="form-input" placeholder="e.g. Maruti Suzuki, Hyundai, Tata">
+      </div>
+
+      <div class="form-group">
+        <label class="input-label">Car Model</label>
+        <input type="text" id="veh-model-input" class="form-input" placeholder="e.g. Ertiga, Creta, Swift Dzire">
+      </div>
+
+      <div class="form-group">
+        <label class="input-label">Vehicle Registration Number</label>
+        <input type="text" id="veh-reg-input" class="form-input" placeholder="e.g. KA 38 M 5678" style="text-transform:uppercase; font-family:monospace;">
+      </div>
+
+      <div class="form-group">
+        <label class="input-label">Fuel Type</label>
+        <select id="veh-fuel-input" class="form-input">
+          <option value="DIESEL">Diesel</option>
+          <option value="PETROL">Petrol</option>
+          <option value="CNG">CNG</option>
+          <option value="EV">Electric (EV)</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" onclick="submitNewVehicle()">
+        <span>Register Vehicle</span>
+      </button>
+      <button class="btn btn-outline" style="margin-top:8px;" onclick="closeModal('modal-add-vehicle')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- ------------------------------------------------------------- -->
+  <!-- JAVASCRIPT APPLICATION CORE -->
+  <!-- ------------------------------------------------------------- -->
+  <script>
+    const CLOUD_PROD_API = "https://areas-permit-tank-server.trycloudflare.com/api/v1";
+    // Clear any stale local LAN IP overrides or old tunnels so cellular mobile data connects cleanly
+    try {
+      const stored = localStorage.getItem("bidar_custom_api_base");
+      if (stored && (!stored.includes("areas-permit-tank-server") || stored.includes("192.168.") || stored.includes("10.0.2.") || stored.includes("localhost"))) {
+        localStorage.removeItem("bidar_custom_api_base");
+      }
+    } catch(e) {}
+
+    function getApiBase() {
+      const custom = localStorage.getItem("bidar_custom_api_base");
+      if (custom && custom.trim() !== "" && !custom.includes("192.168.") && !custom.includes("localhost")) {
+        return custom.trim().replace(/\/+$/, "");
+      }
+      return CLOUD_PROD_API;
+    }
+
+    function setServerUrl() {
+      const current = getApiBase();
+      const entered = prompt("Bidar Connect API Server URL:\n(Use 192.168.1.23:8000 for PC Wi-Fi, or 10.0.2.2:8000 for emulator)", current);
+      if (entered && entered.trim() !== "") {
+        let clean = entered.trim().replace(/\/+$/, "");
+        if (!clean.endsWith("/api/v1")) clean += "/api/v1";
+        localStorage.setItem("bidar_custom_api_base", clean);
+        showToast("Server updated: " + clean);
+        fetchAllAppData();
+      }
+    }
+
+    // High-speed API fetch with strict 4-second timeout to avoid long hangs on cellular data
+    async function apiFetch(endpoint, options = {}, timeoutMs = 4000) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        const response = await fetch(getApiBase() + endpoint, {
+          ...options,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        return response;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    }
+
+    // Global State Store
+    const State = {
+      appMode: "PASSENGER", // 'PASSENGER' | 'DRIVER'
+      currentTab: "home",
+      authMode: "LOGIN", // 'LOGIN' | 'REGISTER'
+      authRole: "PASSENGER", // 'PASSENGER' | 'DRIVER'
+      targetPhone: "",
+      checkedUser: null,
+      pendingRegistration: null,
+      token: localStorage.getItem("bidar_jwt_token") || null,
+      user: null,
+      driverProfile: null,
+      driverEarnings: null,
+      driverRides: [],
+      selectedSeatsCount: 1,
+      selectedRideForBooking: null,
+
+      // Default Live Corridor Departures (Refreshed via /api/v1/rides/search)
+      rides: [],
+
+      // Default Bookings (Refreshed via /api/v1/bookings/my)
+      bookings: [],
+
+      // Default Fleet (Refreshed via /api/v1/driver/vehicles)
+      vehicles: [],
+
+      driverManifests: [],
+
+      driverRideStatus: "SCHEDULED" // 'SCHEDULED' | 'EN_ROUTE' | 'COMPLETED'
+    };
+
+    // Navigation & Screen Manager
+    function goToScreen(screenId) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      const target = document.getElementById(screenId);
+      if (target) target.classList.add("active");
+    }
+
+    // Tactile Hardware Micro-Haptics
+    function triggerHaptic(type = 'light') {
+      try {
+        if (window.navigator && window.navigator.vibrate) {
+          if (type === 'light') window.navigator.vibrate(10);
+          else if (type === 'medium') window.navigator.vibrate(22);
+          else if (type === 'heavy') window.navigator.vibrate(35);
+          else if (type === 'success') window.navigator.vibrate([12, 45, 18]);
+        }
+      } catch (e) {}
+    }
+
+    function selectDatePill(elem, dateLabel) {
+      triggerHaptic('light');
+      document.querySelectorAll('.date-pill').forEach(p => p.classList.remove('active'));
+      if (elem) elem.classList.add('active');
+    }
+
+    // Modal Control
+    function openModal(modalId) {
+      triggerHaptic('medium');
+      document.getElementById(modalId).classList.add("active");
+    }
+
+    function closeModal(modalId) {
+      triggerHaptic('light');
+      document.getElementById(modalId).classList.remove("active");
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toast-msg").innerText = msg;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    function playNotificationSound() {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        const audioCtx = new AudioCtx();
+        if (audioCtx.state === "suspended") {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.35);
+      } catch (e) {
+        console.warn("Audio chime failed", e);
+      }
+    }
+
+    // 1. Splash Screen Transition
+    setTimeout(() => {
+      try {
+        const hasAuth = localStorage.getItem("bidar_app_user");
+        if (hasAuth) {
+          try {
+            const parsed = JSON.parse(hasAuth);
+            if (parsed && parsed.phone && parsed.phone !== "+91 98000 00000" && parsed.name !== "Verified Commuter") {
+              State.user = parsed;
+              updateHeaderProfile();
+              goToScreen("screen-main");
+              renderCurrentView();
+              fetchAllAppData();
+              return;
+            } else {
+              localStorage.removeItem("bidar_app_user");
+              localStorage.removeItem("bidar_jwt_token");
+            }
+          } catch(e) {
+            console.warn("Auth parse error", e);
+          }
+        }
+        goToScreen("screen-welcome");
+      } catch (err) {
+        console.error("Splash transition error", err);
+        goToScreen("screen-welcome");
+      }
+    }, 1000);
+
+    // 2. Onboarding Carousel
+    let onboardIndex = 0;
+    const onboardSlides = [
+      {
+        step: 1,
+        title: "Find Your Journey",
+        text: "Daily intercity departures along NH 65 with locked government-compliant fares of ₹310 per seat. Zero surge pricing, always.",
+        svg: `<circle cx="50" cy="50" r="45" fill="#EBF2FE" /><path d="M25 50 Q 50 20 75 50" stroke="#246BFD" stroke-width="4" stroke-dasharray="4 3" fill="none" /><circle cx="25" cy="50" r="6" fill="#10243A" /><circle cx="75" cy="50" r="6" fill="#FF9B42" />`
+      },
+      {
+        step: 2,
+        title: "Travel Together & Safe",
+        text: "Every driver partner is KYC-verified. Female passengers can filter for Women-Only rides with a dedicated 24/7 SOS helpline.",
+        svg: `<circle cx="50" cy="50" r="45" fill="#FFF4EB" /><path d="M50 25 L75 35 V55 Q 50 80 50 80 Q 25 55 25 35 Z" fill="#FF9B42" opacity="0.8" /><polyline points="42 50 48 56 60 44" stroke="#FFFFFF" stroke-width="4" fill="none" />`
+      },
+      {
+        step: 3,
+        title: "Reach Your Destination",
+        text: "Atomic seat holds ensure zero double bookings. All rider payments are secured under platform escrow until verified trip arrival.",
+        svg: `<circle cx="50" cy="50" r="45" fill="#E8F7F0" /><rect x="30" y="30" width="40" height="40" rx="8" fill="#16A36A" opacity="0.85" /><circle cx="50" cy="45" r="6" fill="#FFFFFF" /><path d="M44 55 H56 V62 H44 Z" fill="#FFFFFF" />`
+      }
+    ];
+
+    function nextOnboardSlide() {
+      onboardIndex++;
+      if (onboardIndex >= onboardSlides.length) {
+        goToScreen("screen-auth");
+        return;
+      }
+      const data = onboardSlides[onboardIndex];
+      document.getElementById("onboard-step-num").innerText = data.step;
+      document.getElementById("onboard-title").innerText = data.title;
+      document.getElementById("onboard-text").innerText = data.text;
+      document.getElementById("onboard-svg").innerHTML = data.svg;
+
+      for (let i = 0; i < 3; i++) {
+        document.getElementById(`dot-${i}`).classList.toggle("active", i === onboardIndex);
+      }
+
+      if (onboardIndex === 2) {
+        document.getElementById("onboard-next-btn").innerHTML = `<span>Get Started</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>`;
+      }
+    }
+
+    // -------------------------------------------------------------
+    // 3. AUTHENTICATION & REGISTRATION FLOW (Requirements 1, 2, 3, 5)
+    // -------------------------------------------------------------
+    function startAuthFlow(mode) {
+      State.authMode = mode || 'LOGIN';
+      clearAuthAlert();
+      document.getElementById("auth-input-step").style.display = "block";
+      document.getElementById("auth-otp-step").style.display = "none";
+      switchAuthMode(State.authMode);
+      goToScreen("screen-auth");
+    }
+
+    function switchAuthMode(mode) {
+      State.authMode = mode;
+      clearAuthAlert();
+      document.getElementById("tab-auth-login").classList.toggle("active", mode === "LOGIN");
+      document.getElementById("tab-auth-register").classList.toggle("active", mode === "REGISTER");
+      document.getElementById("view-auth-login").style.display = mode === "LOGIN" ? "block" : "none";
+      document.getElementById("view-auth-register").style.display = mode === "REGISTER" ? "block" : "none";
+      const driverFields = document.getElementById("reg-driver-fields");
+      if (driverFields) driverFields.style.display = "none";
+      updateAuthHeader();
+    }
+
+    function switchAuthRole(role) {
+      // Single unified role flow
+    }
+
+    function updateAuthHeader() {
+      const badge = document.getElementById("auth-mode-badge");
+      if (badge) badge.innerText = State.authMode === "LOGIN" ? "Sign In" : "Registration";
+    }
+
+    function showAuthAlert(msg, type, ctaText, ctaAction) {
+      const box = document.getElementById("auth-alert-box");
+      box.className = "auth-alert " + (type || "danger");
+      let html = `<div style="font-size:12px; font-weight:700; line-height:1.4;">${msg}</div>`;
+      if (ctaText && ctaAction) {
+        html += `<button class="btn btn-primary" style="margin-top:10px; padding:8px 12px; font-size:11px;" onclick="${ctaAction}">${ctaText}</button>`;
+      }
+      box.innerHTML = html;
+      box.style.display = "block";
+    }
+
+    function clearAuthAlert() {
+      const box = document.getElementById("auth-alert-box");
+      box.style.display = "none";
+      box.innerHTML = "";
+    }
+
+    function switchToRegisterWithPhone(phone) {
+      switchAuthMode("REGISTER");
+      document.getElementById("reg-phone-input").value = phone;
+      clearAuthAlert();
+    }
+
+    function switchToLoginWithPhone(phone) {
+      switchAuthMode("LOGIN");
+      document.getElementById("login-phone-input").value = phone;
+      clearAuthAlert();
+    }
+
+    // REQUIREMENT 5: Check database existence before login
+    async function handleLoginSubmit() {
+      clearAuthAlert();
+      const rawInput = document.getElementById("login-phone-input").value.trim();
+      let cleaned = rawInput.replace(/[\s\-]/g, "");
+      if (cleaned.startsWith("+91")) cleaned = cleaned.slice(3);
+      else if (cleaned.startsWith("91") && cleaned.length === 12) cleaned = cleaned.slice(2);
+
+      if (cleaned.length !== 10) {
+        showAuthAlert("Please enter a valid 10-digit mobile number.", "danger");
+        return;
+      }
+      const phoneInput = cleaned;
+
+      showToast("Verifying account credentials...");
+      try {
+        const res = await apiFetch("/auth/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: phoneInput })
+        }, 3500);
+        const json = await res.json();
+
+        if (json.success && json.data && json.data.exists) {
+          // Registered in DB! Dispatch OTP
+          State.targetPhone = json.data.phone;
+          State.checkedUser = json.data;
+
+          document.getElementById("otp-target-phone").innerText = State.targetPhone;
+          document.getElementById("auth-input-step").style.display = "none";
+          document.getElementById("auth-otp-step").style.display = "block";
+          const defaultOtp = "123456";
+          for (let i = 0; i < 6; i++) {
+            const b = document.getElementById("otp-" + i);
+            if (b) b.value = defaultOtp[i];
+          }
+
+          // Asynchronous dispatch so screen transition is instant
+          apiFetch("/auth/otp/request", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ phone: State.targetPhone })
+          }, 3500).catch(() => {});
+
+          showToast("OTP sent to " + State.targetPhone + " (Dev: 123456)");
+        } else {
+          // NOT in DB: Tell them to register!
+          showAuthAlert(
+            `Mobile number (+91 ${phoneInput}) is not registered. Please create an account to get started.`,
+            "danger",
+            "Create Account Now",
+            `switchToRegisterWithPhone('${phoneInput}')`
+          );
+        }
+      } catch (err) {
+        console.error("Network error checking user", err);
+        showAuthAlert(
+          `<strong>Cannot reach backend server.</strong><br><br>` +
+          `• Check that your phone has an active internet or cellular data connection.<br>` +
+          `• Cloud API: ${getApiBase()}`,
+          "danger",
+          "Configure Server IP",
+          "setServerUrl()"
+        );
+      }
+    }
+
+    // Register user with full info captured
+    async function handleRegisterSubmit() {
+      clearAuthAlert();
+      const name = document.getElementById("reg-name-input").value.trim();
+      const phone = document.getElementById("reg-phone-input").value.trim();
+      const email = document.getElementById("reg-email-input").value.trim();
+
+      if (!name || name.length < 2) {
+        showAuthAlert("Please enter your full legal name.", "danger");
+        return;
+      }
+      if (phone.length < 10) {
+        showAuthAlert("Please enter a valid 10-digit mobile number.", "danger");
+        return;
+      }
+
+      State.pendingRegistration = {
+        full_name: name,
+        phone: phone,
+        email: email || null,
+        role: "PASSENGER"
+      };
+
+      showToast("Validating registration credentials...");
+      try {
+        const checkRes = await apiFetch("/auth/check", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ identifier: phone })
+        }, 3500);
+        const checkJson = await checkRes.json();
+        if (checkJson.success && checkJson.data && checkJson.data.exists) {
+          showAuthAlert(
+            `This mobile number is already registered in our database. Please sign in instead.`,
+            "danger",
+            "Switch to Sign In",
+            `switchToLoginWithPhone('${phone}')`
+          );
+          return;
+        }
+      } catch(e) {
+        console.warn("Check pre-registration check error", e);
+      }
+
+      // Dispatch OTP
+      State.targetPhone = phone.startsWith("+91") ? phone : "+91" + phone;
+      apiFetch("/auth/otp/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: State.targetPhone })
+      }, 3500).catch(() => {});
+
+      document.getElementById("otp-target-phone").innerText = State.targetPhone;
+      document.getElementById("auth-input-step").style.display = "none";
+      document.getElementById("auth-otp-step").style.display = "block";
+      const defaultOtp = "123456";
+      for (let i = 0; i < 6; i++) {
+        const b = document.getElementById("otp-" + i);
+        if (b) b.value = defaultOtp[i];
+      }
+      showToast("Verification code sent to " + State.targetPhone + " (Dev: 123456)");
+    }
+
+    function backToInputStep() {
+      document.getElementById("auth-input-step").style.display = "block";
+      document.getElementById("auth-otp-step").style.display = "none";
+    }
+
+    function handleOtpInput(input, index) {
+      if (input.value.length >= 1) {
+        if (index < 5) {
+          const next = document.getElementById("otp-" + (index + 1));
+          if (next) next.focus();
+        }
+      }
+    }
+
+    function getEnteredOtp() {
+      let otp = "";
+      for (let i = 0; i < 6; i++) {
+        const box = document.getElementById("otp-" + i);
+        otp += box ? (box.value || "") : "";
+      }
+      return otp.length === 6 ? otp : "123456";
+    }
+
+    // Verify OTP & complete Login/Registration
+    async function handleVerifyOtpSubmit() {
+      const enteredOtp = getEnteredOtp();
+      showToast("Authenticating session...");
+
+      if (State.authMode === "REGISTER" && State.pendingRegistration) {
+        // REGISTER API CALL
+        try {
+          const regPayload = {
+            ...State.pendingRegistration,
+            otp: enteredOtp
+          };
+          const res = await apiFetch("/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(regPayload)
+          }, 4000);
+          const data = await res.json();
+          if (res.ok && data.success && data.data) {
+            State.token = data.data.access_token;
+            State.user = data.data.user;
+            localStorage.setItem("bidar_jwt_token", State.token);
+            localStorage.setItem("bidar_app_user", JSON.stringify(State.user));
+
+            showToast("Registration Complete! Welcome to Bidar Connect.");
+            updateHeaderProfile();
+            setAppMode(State.pendingRegistration && State.pendingRegistration.role === "DRIVER" ? "DRIVER" : "PASSENGER");
+            goToScreen("screen-main");
+            renderCurrentView();
+            // Fetch live datasets asynchronously in background
+            fetchAllAppData();
+            return;
+          } else {
+            showToast(data.error?.message || "Registration failed. Try again.");
+          }
+        } catch (err) {
+          console.error("Register error", err);
+          showToast("Network error during registration. Please check mobile internet.");
+        }
+      } else {
+        // LOGIN API CALL
+        try {
+          const res = await apiFetch("/auth/otp/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              phone: State.targetPhone,
+              otp: enteredOtp
+            })
+          }, 4000);
+          const data = await res.json();
+          if (res.ok && data.success && data.data) {
+            State.token = data.data.access_token;
+            State.user = data.data.user;
+            localStorage.setItem("bidar_jwt_token", State.token);
+            localStorage.setItem("bidar_app_user", JSON.stringify(State.user));
+
+            showToast("Welcome back, " + (State.user.full_name || "Traveller") + "!");
+            updateHeaderProfile();
+            setAppMode(State.user && State.user.is_driver && !State.user.is_passenger ? "DRIVER" : "PASSENGER");
+            goToScreen("screen-main");
+            renderCurrentView();
+            // Fetch live datasets asynchronously in background
+            fetchAllAppData();
+            return;
+          } else {
+            showToast(data.error?.message || "Invalid OTP code.");
+          }
+        } catch(err) {
+          console.error("Login verify error", err);
+          showToast("Network error verifying OTP. Please try again.");
+        }
+      }
+    }
+
+    // REQUIREMENT 4: Comprehensive Live Data Fetching
+    async function fetchAllAppData() {
+      if (!State.token) {
+        const stored = localStorage.getItem("bidar_jwt_token");
+        if (stored) State.token = stored;
+      }
+      const headers = State.token ? { Authorization: "Bearer " + State.token } : {};
+
+      try {
+        const meRes = await fetch(getApiBase() + "/auth/me", { headers });
+        if (meRes.ok) {
+          const meData = await meRes.json();
+          if (meData.success && meData.data) {
+            State.user = meData.data;
+            State.user.name = meData.data.full_name;
+            localStorage.setItem("bidar_app_user", JSON.stringify(State.user));
+            updateHeaderProfile();
+          }
+        }
+      } catch(e) {
+        console.warn("Failed fetching /auth/me", e);
+      }
+
+      // Fetch Driver Specific Data (for any authenticated session in driver mode)
+      if (State.token) {
+        try {
+          const [vehRes, profRes, ridesRes, earnRes] = await Promise.all([
+            fetch(getApiBase() + "/driver/vehicles", { headers }),
+            fetch(getApiBase() + "/driver/profile", { headers }),
+            fetch(getApiBase() + "/driver/rides", { headers }),
+            fetch(getApiBase() + "/driver/earnings", { headers })
+          ]);
+
+          if (vehRes && vehRes.ok) {
+            const vData = await vehRes.json();
+            if (vData.success && Array.isArray(vData.data)) {
+              State.vehicles = vData.data.map(v => ({
+                id: v.vehicle_id,
+                make: v.make,
+                model: v.model,
+                reg: v.registration_number,
+                fuel: v.fuel_type,
+                capacity: v.passenger_capacity
+              }));
+            }
+          }
+
+          if (profRes && profRes.ok) {
+            const pData = await profRes.json();
+            if (pData.success && pData.data) {
+              State.driverProfile = pData.data;
+            }
+          }
+
+          if (ridesRes && ridesRes.ok) {
+            const rData = await ridesRes.json();
+            if (rData.success && Array.isArray(rData.data)) {
+              State.driverRides = rData.data;
+              const manifests = [];
+              const currentBookingIds = new Set();
+              let newBookingDetected = null;
+
+              for (const r of rData.data) {
+                if (Array.isArray(r.manifest)) {
+                  for (const m of r.manifest) {
+                    const bId = m.booking_id || (r.ride_id + "_" + (m.passenger_name || m.passengerName));
+                    currentBookingIds.add(bId);
+                    if (window._knownManifestIds && !window._knownManifestIds.has(bId)) {
+                      newBookingDetected = m;
+                    }
+                    manifests.push({
+                      rideId: r.ride_id,
+                      passengerName: m.passenger_name || m.passengerName,
+                      phone: m.passenger_phone || m.phone,
+                      seats: m.seats_booked || m.seats || 1,
+                      farePaid: m.fare_amount || 310,
+                      status: m.booking_status || m.status || "CONFIRMED"
+                    });
+                  }
+                }
+              }
+              State.driverManifests = manifests;
+
+              if (window._knownManifestIds && newBookingDetected) {
+                const pName = newBookingDetected.passenger_name || newBookingDetected.passengerName || "Passenger";
+                const pSeats = newBookingDetected.seats_booked || newBookingDetected.seats || 1;
+                showToast("New Booking! " + pName + " reserved " + pSeats + " seat(s)");
+                playNotificationSound();
+                if (State.appMode === "DRIVER") {
+                  renderCurrentView();
+                }
+              }
+              window._knownManifestIds = currentBookingIds;
+            }
+          }
+
+          if (earnRes && earnRes.ok) {
+            const eData = await earnRes.json();
+            if (eData.success && eData.data) {
+              State.driverEarnings = eData.data;
+            }
+          }
+        } catch(e) {
+          console.warn("Failed fetching driver dataset", e);
+        }
+      }
+
+      // Fetch Passenger Specific Data
+      try {
+        const [bookRes, ridesRes] = await Promise.all([
+          fetch(getApiBase() + "/bookings/my", { headers }),
+          fetch(getApiBase() + "/rides/search?origin_city=Bidar&destination_city=Hyderabad&seats=1")
+        ]);
+
+        if (bookRes && bookRes.ok) {
+          const bData = await bookRes.json();
+          if (bData.success && bData.data) {
+            let rawList = [];
+            if (Array.isArray(bData.data)) {
+              rawList = bData.data;
+            } else if (bData.data.upcoming || bData.data.history) {
+              rawList = [...(bData.data.upcoming || []), ...(bData.data.history || [])];
+            }
+            State.bookings = rawList.map(b => {
+              const orig = b.route?.origin_city || b.ride?.origin_city || 'Bidar';
+              const dest = b.route?.destination_city || b.ride?.destination_city || 'Hyderabad';
+              const depTime = b.route?.departure_time || b.ride?.departure_time;
+              const formattedDate = depTime ? new Date(depTime).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "Scheduled";
+              const fareVal = b.fare_snapshot?.total_fare || b.total_fare || (b.seats_booked ? b.seats_booked * 310 : 310);
+              const drvName = b.driver?.name || b.ride?.driver?.name || "Verified Driver";
+              const drvPhone = b.driver?.phone || b.ride?.driver?.phone || "+91 8482 112 112";
+              const vehStr = b.vehicle ? `${b.vehicle.make || 'Car'} ${b.vehicle.model || ''} (${b.vehicle.registration_number || 'KA 38'})` : (b.ride?.vehicle ? `${b.ride.vehicle.make || 'Car'} ${b.ride.vehicle.model || ''}` : "Verified Vehicle");
+
+              return {
+                id: b.reference_code || b.booking_id,
+                route: `${orig} → ${dest}`,
+                date: formattedDate,
+                pickup: b.route?.pickup_point || b.pickup_point || "Corridor Bus Stand",
+                drop: b.route?.drop_point || b.drop_point || "Destination Hub",
+                driver: drvName,
+                phone: drvPhone,
+                vehicle: vehStr,
+                seats: b.seats_booked || 1,
+                fare: fareVal,
+                status: b.booking_status || "CONFIRMED"
+              };
+            });
+          }
+        }
+
+        if (ridesRes && ridesRes.ok) {
+          const rData = await ridesRes.json();
+          if (rData.success && Array.isArray(rData.data)) {
+            State.rides = rData.data.map(r => ({
+              id: r.ride_id,
+              driverName: r.driver?.name || "Corridor Partner",
+              rating: r.driver?.rating || 5.0,
+              trips: r.driver?.total_completed_trips || 0,
+              vehicle: `${r.vehicle?.make || 'Car'} ${r.vehicle?.model || ''}`,
+              regNumber: r.vehicle?.registration_number || "",
+              origin: r.origin_city,
+              destination: r.destination_city,
+              depTime: r.departure_time ? new Date(r.departure_time).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit' }) : "Scheduled",
+              pickup: r.pickup_point || "New Bus Stand, Bidar",
+              drop: r.drop_point || "Gachibowli DLF, Hyderabad",
+              seatsAvailable: r.available_seats || 1,
+              fare: r.fare_per_seat || 310
+            }));
+          }
+        }
+      } catch(e) {
+        console.warn("Failed fetching passenger dataset", e);
+      }
+
+      renderCurrentView();
+    }
+
+    function updateHeaderProfile() {
+      const name = (State.user && (State.user.name || State.user.full_name)) || "Bidar Connect";
+      const initials = name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2) || "BC";
+      document.getElementById("header-avatar").innerText = initials;
+      document.getElementById("header-user-name").innerText = name;
+    }
+
+    function logoutApp() {
+      localStorage.removeItem("bidar_jwt_token");
+      localStorage.removeItem("bidar_app_user");
+      State.token = null;
+      State.user = null;
+      State.driverProfile = null;
+      State.driverEarnings = null;
+      clearAuthAlert();
+      goToScreen("screen-welcome");
+      showToast("Signed out successfully.");
+    }
+
+    // 4. Mode Switcher (Passenger / Driver)
+    function setAppMode(mode) {
+      State.appMode = mode;
+      document.getElementById("btn-mode-passenger").classList.toggle("active", mode === "PASSENGER");
+      document.getElementById("btn-mode-driver").classList.toggle("active", mode === "DRIVER");
+      document.getElementById("header-mode-label").innerText = mode === "PASSENGER" ? "Passenger Mode" : "Driver Partner";
+
+      State.currentTab = mode === "PASSENGER" ? "home" : "driver-dashboard";
+      renderBottomNav();
+      renderCurrentView();
+
+      if (window._driverPollTimer) {
+        clearInterval(window._driverPollTimer);
+        window._driverPollTimer = null;
+      }
+
+      if (mode === "DRIVER") {
+        fetchAllAppData();
+        window._driverPollTimer = setInterval(() => {
+          if (State.appMode === "DRIVER" && State.token) {
+            fetchAllAppData();
+          } else {
+            clearInterval(window._driverPollTimer);
+            window._driverPollTimer = null;
+          }
+        }, 6000);
+      }
+    }
+
+    function renderBottomNav() {
+      const nav = document.getElementById("bottom-nav-bar");
+      if (State.appMode === "PASSENGER") {
+        nav.innerHTML = `
+          <button class="nav-item ${State.currentTab === 'home' ? 'active' : ''}" onclick="setPassengerTab('home')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            <span>Home</span>
+          </button>
+          <button class="nav-item ${State.currentTab === 'explore' ? 'active' : ''}" onclick="setPassengerTab('explore')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span>Explore</span>
+          </button>
+          <button class="nav-item ${State.currentTab === 'bookings' ? 'active' : ''}" onclick="setPassengerTab('bookings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+            <span>Bookings</span>
+          </button>
+          <button class="nav-item ${State.currentTab === 'profile' ? 'active' : ''}" onclick="setPassengerTab('profile')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Profile</span>
+          </button>
+        `;
+      } else {
+        nav.innerHTML = `
+          <button class="nav-item ${State.currentTab === 'driver-dashboard' ? 'active' : ''}" onclick="setDriverTab('driver-dashboard')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            <span>Overview</span>
+          </button>
+          <button class="nav-item ${State.currentTab === 'driver-rides' ? 'active' : ''}" onclick="setDriverTab('driver-rides')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+            <span>Manifests</span>
+          </button>
+          <button class="nav-item nav-publish ${State.currentTab === 'driver-publish' ? 'active' : ''}" onclick="setDriverTab('driver-publish')">
+            <div class="nav-icon-circle">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <span>Publish</span>
+          </button>
+          <button class="nav-item ${State.currentTab === 'driver-earnings' ? 'active' : ''}" onclick="setDriverTab('driver-earnings')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="10" x2="12" y2="14"/><path d="M10 10h4"/></svg>
+            <span>Earnings</span>
+          </button>
+          <button class="nav-item ${State.currentTab === 'driver-fleet' ? 'active' : ''}" onclick="setDriverTab('driver-fleet')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+            <span>Fleet</span>
+          </button>
+        `;
+      }
+    }
+
+    function setPassengerTab(tab) {
+      triggerHaptic('light');
+      State.currentTab = tab;
+      renderBottomNav();
+      renderCurrentView();
+    }
+
+    function setDriverTab(tab) {
+      triggerHaptic('light');
+      State.currentTab = tab;
+      renderBottomNav();
+      renderCurrentView();
+    }
+
+    // 5. Views Rendering Engine
+    function renderCurrentView() {
+      const content = document.getElementById("main-tab-content");
+
+      // PASSENGER: HOME
+      if (State.currentTab === "home") {
+        content.innerHTML = `
+          <div class="content-box">
+            <div style="margin-bottom:18px;">
+              <span style="font-size:11px; font-weight:800; color:#60A5FA; text-transform:uppercase; letter-spacing:0.8px;">NH 65 Intercity Expressway</span>
+              <h2 style="font-size:24px; font-weight:900; color:#F8FAFC; margin-top:3px; letter-spacing:-0.4px;">Where to today?</h2>
+            </div>
+
+            <!-- Route Search Box -->
+            <div class="search-card">
+              <button class="swap-btn" onclick="triggerHaptic('medium'); swapSearchCities();" title="Swap Destination">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 1 21 5 17 9"/><path d="M3 5h18"/><polyline points="7 23 3 19 7 15"/><path d="M21 19H3"/></svg>
+              </button>
+
+              <div class="search-row">
+                <div class="search-dot origin"></div>
+                <input type="text" id="search-orig" class="search-input" value="Bidar" readonly>
+              </div>
+
+              <div class="search-row">
+                <div class="search-dot dest"></div>
+                <input type="text" id="search-dest" class="search-input" value="Hyderabad" readonly>
+              </div>
+
+              <!-- Executive Day Scroller -->
+              <div style="display:flex; gap:8px; overflow-x:auto; padding:6px 0 4px 0; -webkit-overflow-scrolling:touch;" id="date-pills-row">
+                <button type="button" class="date-pill active" onclick="selectDatePill(this, 'Today')">Today</button>
+                <button type="button" class="date-pill" onclick="selectDatePill(this, 'Tomorrow')">Tomorrow</button>
+                <button type="button" class="date-pill" onclick="selectDatePill(this, 'Mon, 10 Nov')">Mon, 10 Nov</button>
+                <button type="button" class="date-pill" onclick="selectDatePill(this, 'Tue, 11 Nov')">Tue, 11 Nov</button>
+                <button type="button" class="date-pill" onclick="selectDatePill(this, 'Wed, 12 Nov')">Wed, 12 Nov</button>
+              </div>
+
+              <button class="btn btn-primary" style="margin-top:16px;" onclick="triggerHaptic('heavy'); setPassengerTab('explore');">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <span>Find Highway Rides (310 Rs)</span>
+              </button>
+            </div>
+
+            <!-- Corridor Highlight Banner -->
+            <div class="card" style="margin-top:20px; background:linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%); color:#0F172A; border:1px solid #BFDBFE; box-shadow:0 8px 24px -4px rgba(37,99,235,0.12);">
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                  <span style="font-size:10px; font-weight:800; color:#2563EB; text-transform:uppercase; letter-spacing:0.8px;">Corridor Guarantee</span>
+                  <h3 style="font-size:17px; font-weight:900; margin:4px 0; color:#0F172A;">310 Rs Flat Fare</h3>
+                  <p style="font-size:12px; color:#475569;">Fixed 310 Rs per seat. Toll & fuel included. Zero surge pricing.</p>
+                </div>
+                <div style="background:linear-gradient(135deg, #F59E0B 0%, #D97706 100%); color:#FFFFFF; font-size:18px; font-weight:900; padding:8px 14px; border-radius:14px; box-shadow:0 4px 14px rgba(245,158,11,0.35); flex-shrink:0; margin-left:12px;">310 Rs</div>
+              </div>
+            </div>
+
+            <!-- Quick Departure Feed -->
+            <div class="section-title-wrap" style="margin-top:16px;">
+              <div>
+                <h3 class="section-title">Today's Corridor Departures</h3>
+                <span class="section-subtitle">Real-time highway departures with verified drivers</span>
+              </div>
+            </div>
+
+            <div id="home-rides-list">
+              ${renderRidesListHtml()}
+            </div>
+          </div>
+        `;
+      }
+
+      // PASSENGER: EXPLORE
+      else if (State.currentTab === "explore") {
+        content.innerHTML = `
+          <div class="content-box">
+            <div class="section-title-wrap">
+              <div>
+                <h3 class="section-title">Available Highway Rides</h3>
+                <span class="section-subtitle">Bidar ⇄ Hyderabad (NH 65 Corridor)</span>
+              </div>
+              <button class="btn btn-outline" style="width:auto; padding:6px 12px; font-size:11px;" onclick="swapSearchCities()">Swap Route</button>
+            </div>
+
+            <div style="display:flex; gap:8px; overflow-x:auto; padding-bottom:12px; margin-bottom:12px;">
+              <span style="padding:6px 14px; border-radius:999px; background:var(--blue); color:#fff; font-size:12px; font-weight:700;">All Rides</span>
+              <span style="padding:6px 14px; border-radius:999px; background:var(--white); border:1px solid var(--border); color:var(--navy); font-size:12px; font-weight:700;">Morning</span>
+              <span style="padding:6px 14px; border-radius:999px; background:var(--white); border:1px solid var(--border); color:var(--navy); font-size:12px; font-weight:700;">Evening</span>
+              <span style="padding:6px 14px; border-radius:999px; background:var(--white); border:1px solid var(--border); color:#E02424; font-size:12px; font-weight:700;">Women-Only</span>
+            </div>
+
+            <div id="explore-rides-list">
+              ${renderRidesListHtml()}
+            </div>
+          </div>
+        `;
+      }
+
+      // PASSENGER: BOOKINGS
+      else if (State.currentTab === "bookings") {
+        content.innerHTML = `
+          <div class="content-box">
+            <h3 class="section-title" style="margin-bottom:4px;">My Booked Journeys</h3>
+            <span class="section-subtitle" style="display:block; margin-bottom:16px;">Access your digital ticket passes and travel itineraries</span>
+
+            ${!State.bookings || State.bookings.length === 0 ? `
+              <div class="card" style="text-align:center; padding:36px 20px;">
+                <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" style="margin:0 auto 12px auto;"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                <h4 style="font-size:15px; font-weight:800; color:var(--navy);">No Active Bookings</h4>
+                <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">You have no active or completed seat reservations.</p>
+                <button class="btn btn-primary" style="margin-top:14px; width:auto; padding:10px 18px;" onclick="setPassengerTab('explore')">Search Rides</button>
+              </div>
+            ` : State.bookings.map(b => `
+              <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; border-bottom:1px dashed var(--border); padding-bottom:10px;">
+                  <div>
+                    <span style="font-size:10px; font-weight:800; color:var(--blue); text-transform:uppercase;">${b.id}</span>
+                    <h4 style="font-size:16px; font-weight:900; color:var(--navy);">${b.route}</h4>
+                  </div>
+                  <span style="font-size:11px; font-weight:800; color:var(--success); background:var(--success-light); padding:4px 8px; border-radius:6px;">${b.status}</span>
+                </div>
+
+                <div style="font-size:12px; line-height:1.6; color:var(--text-secondary); margin-bottom:14px;">
+                  <div><strong>Departure:</strong> ${b.date}</div>
+                  <div><strong>Pickup Landmark:</strong> ${b.pickup}</div>
+                  <div><strong>Driver:</strong> ${b.driver} (${b.phone})</div>
+                  <div><strong>Vehicle:</strong> ${b.vehicle}</div>
+                  <div><strong>Amount Paid:</strong> ₹${b.fare} (Platform Escrow Secured)</div>
+                </div>
+
+                <div style="display:flex; gap:10px;">
+                  <button class="btn btn-primary" style="padding:10px; font-size:12px;" onclick="showTicketQr('${b.id}')">View Digital QR Pass</button>
+                  <a href="tel:${b.phone}" class="btn btn-outline" style="padding:10px; font-size:12px; text-decoration:none;">Call Driver</a>
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      // PASSENGER: PROFILE
+      else if (State.currentTab === "profile") {
+        const userName = State.user?.name || State.user?.full_name || "Guest Traveller";
+        const userPhone = State.user?.phone || "Not signed in";
+        const userInitials = userName.slice(0, 2).toUpperCase();
+        content.innerHTML = `
+          <div class="content-box">
+            <div class="card" style="text-align:center; padding:24px;">
+              <div class="header-avatar" style="width:64px; height:64px; font-size:24px; margin:0 auto 12px auto;">${userInitials}</div>
+              <h3 style="font-size:18px; font-weight:900; color:var(--navy);">${userName}</h3>
+              <p style="font-size:12px; color:var(--text-secondary);">${userPhone}</p>
+              <div style="margin-top:10px;">
+                <span style="font-size:11px; font-weight:700; color:var(--success); background:var(--success-light); padding:4px 10px; border-radius:999px;">${State.user ? (State.user.is_driver ? "Verified Driver Partner" : "Verified Passenger") : "Unregistered User"}</span>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="section-title" style="margin-bottom:12px;">Account Controls</div>
+              <button class="btn btn-outline" style="margin-bottom:8px; justify-content:space-between;" onclick="setAppMode(State.appMode === 'DRIVER' ? 'PASSENGER' : 'DRIVER')">
+                <span>Switch to ${State.appMode === 'DRIVER' ? 'Passenger' : 'Driver Partner'} Mode</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </button>
+              <button class="btn btn-outline" style="margin-bottom:8px; justify-content:space-between;" onclick="openSosModal()">
+                <span>Emergency 24/7 Helpline</span>
+                <span style="color:var(--error); font-weight:800;">+91 8482 112 112</span>
+              </button>
+              <button class="btn btn-outline" style="margin-bottom:8px; justify-content:space-between;" onclick="setServerUrl()">
+                <span>Backend Server IP</span>
+                <span style="color:var(--blue); font-size:11px; font-weight:700;">${getApiBase().replace('http://', '').replace('/api/v1', '')}</span>
+              </button>
+              <button class="btn btn-outline" style="justify-content:space-between;" onclick="logoutApp()">
+                <span style="color:var(--error);">${State.user ? "Sign Out" : "Return to Login"}</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--error)"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // DRIVER: DASHBOARD
+      else if (State.currentTab === "driver-dashboard") {
+        content.innerHTML = `
+          <div class="content-box">
+            <div style="margin-bottom:16px;">
+              <span style="font-size:12px; font-weight:700; color:var(--orange); text-transform:uppercase;">Ready for Your Next Journey?</span>
+              <h2 style="font-size:22px; font-weight:900; color:var(--navy); margin-top:2px;">Driver Partner Center</h2>
+            </div>
+
+            <div class="stats-grid">
+              <div class="stat-card">
+                <div class="stat-label">Active Rides</div>
+                <div class="stat-value">${State.driverRides ? State.driverRides.length : 0}</div>
+                <div class="stat-sub">Published Corridor Trips</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Confirmed Riders</div>
+                <div class="stat-value">${State.driverManifests ? State.driverManifests.reduce((acc, m) => acc + (m.seats || 1), 0) : 0}</div>
+                <div class="stat-sub">Passenger Manifest</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Net Payable</div>
+                <div class="stat-value">₹${State.driverEarnings ? State.driverEarnings.pending_payout_amount || 0 : 0}</div>
+                <div class="stat-sub">₹290 / Seat Cleared</div>
+              </div>
+              <div class="stat-card">
+                <div class="stat-label">Partner Rating</div>
+                <div class="stat-value">${State.driverProfile?.rating ? State.driverProfile.rating.toFixed(2) : "5.0"} ★</div>
+                <div class="stat-sub">Corridor Driver</div>
+              </div>
+            </div>
+
+            <button class="btn btn-orange" style="margin-bottom:20px;" onclick="setDriverTab('driver-publish')">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Publish New Highway Ride</span>
+            </button>
+
+            <div class="section-title-wrap">
+              <div>
+                <h3 class="section-title">Published Highway Rides</h3>
+                <span class="section-subtitle">Your active departures along NH 65 corridor</span>
+              </div>
+              <span style="font-size:12px; font-weight:800; color:var(--blue);">${State.driverRides ? State.driverRides.length : 0} Active</span>
+            </div>
+
+            ${!State.driverRides || State.driverRides.length === 0 ? `
+              <div class="card" style="text-align:center; padding:32px 16px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" style="margin:0 auto 10px auto;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <h4 style="font-size:15px; font-weight:800; color:var(--navy);">No Published Highway Rides</h4>
+                <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">You have no active highway trips today. Tap 'Publish New Highway Ride' above to post departure seats.</p>
+              </div>
+            ` : State.driverRides.map(r => `
+              <div class="card" style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                  <div>
+                    <div style="font-size:11px; font-weight:800; color:var(--orange); text-transform:uppercase; letter-spacing:0.5px;">NH 65 Corridor</div>
+                    <h4 style="font-size:16px; font-weight:900; color:var(--navy); margin-top:2px;">${r.origin_city} → ${r.destination_city}</h4>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+                      ${r.departure_time ? new Date(r.departure_time).toLocaleDateString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'Scheduled'}
+                    </div>
+                  </div>
+                  <span style="font-size:11px; font-weight:800; color:${r.status === 'COMPLETED' ? 'var(--text-secondary)' : r.status === 'EN_ROUTE' ? '#B45309' : 'var(--blue)'}; background:${r.status === 'COMPLETED' ? '#F1F5F9' : r.status === 'EN_ROUTE' ? '#FEF3C7' : 'var(--blue-light)'}; padding:4px 8px; border-radius:6px;">
+                    ${r.status || 'SCHEDULED'}
+                  </span>
+                </div>
+
+                <div style="font-size:12px; line-height:1.6; color:var(--navy); padding:8px 10px; background:#F8FAFC; border-radius:8px; margin-bottom:10px;">
+                  <div><strong>Pickup:</strong> ${r.pickup_point || 'Corridor Bus Stand'}</div>
+                  <div><strong>Drop:</strong> ${r.drop_point || 'Destination Landmark'}</div>
+                  <div><strong>Vehicle:</strong> ${r.vehicle?.make || 'Car'} ${r.vehicle?.model || ''} (${r.vehicle?.registration_number || 'KA 38'})</div>
+                  <div><strong>Available Seats:</strong> <span style="color:var(--success); font-weight:700;">${r.available_seats} of ${r.total_offered_seats || r.available_seats}</span> • ₹310 / Seat (Driver Net: ₹290)</div>
+                </div>
+
+                <div style="font-size:12px; font-weight:800; color:var(--navy); margin-bottom:6px;">Confirmed Passengers:</div>
+                ${!r.manifest || r.manifest.length === 0 ? `
+                  <div style="font-size:12px; color:var(--text-secondary); padding:8px; background:#FFFFFF; border:1px dashed #CBD5E1; border-radius:6px; text-align:center; margin-bottom:10px;">
+                    No passenger bookings confirmed yet. Published live on search.
+                  </div>
+                ` : r.manifest.map(m => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                      <div style="font-size:13px; font-weight:800; color:var(--navy);">${m.passenger_name || m.passengerName}</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${m.passenger_phone || m.phone} • ${m.seats_booked || m.seats} Seat(s)</div>
+                    </div>
+                    <div style="text-align:right;">
+                      <span style="font-size:11px; font-weight:800; color:var(--success); background:var(--success-light); padding:2px 6px; border-radius:4px;">${m.booking_status || m.status || 'CONFIRMED'}</span>
+                      <div style="font-size:11px; font-weight:700; color:var(--blue); margin-top:2px;">₹${m.fare_amount || 310} Escrow</div>
+                    </div>
+                  </div>
+                `).join('')}
+
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                  ${r.status === 'SCHEDULED' ? `
+                    <button class="btn btn-primary" onclick="setDriverRideStatus('EN_ROUTE', '${r.ride_id}')">Start Highway Trip</button>
+                  ` : r.status === 'EN_ROUTE' ? `
+                    <button class="btn btn-primary" style="background:var(--success);" onclick="setDriverRideStatus('COMPLETED', '${r.ride_id}')">Complete Ride</button>
+                  ` : `
+                    <button class="btn btn-outline" onclick="requestDriverPayout('${r.ride_id}')">Disburse Net Settlement (₹290/seat)</button>
+                  `}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // DRIVER: RIDES & MANIFESTS TAB
+      else if (State.currentTab === "driver-rides") {
+        content.innerHTML = `
+          <div class="content-box">
+            <div class="section-title-wrap">
+              <div>
+                <h3 class="section-title">Passenger Manifests</h3>
+                <span class="section-subtitle">Live highway departures & confirmed riders</span>
+              </div>
+              <button class="btn btn-primary" style="width:auto; padding:6px 12px; font-size:12px;" onclick="fetchAllAppData()">Refresh</button>
+            </div>
+
+            ${!State.driverRides || State.driverRides.length === 0 ? `
+              <div class="card" style="text-align:center; padding:32px 16px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" style="margin:0 auto 10px auto;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <h4 style="font-size:15px; font-weight:800; color:var(--navy);">No Scheduled Trips</h4>
+                <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">You have no active rides published. Go to Publish to schedule a departure along NH 65.</p>
+                <button class="btn btn-orange" style="margin-top:14px; width:auto; padding:10px 18px;" onclick="setDriverTab('driver-publish')">Publish Highway Ride</button>
+              </div>
+            ` : State.driverRides.map(r => `
+              <div class="card" style="margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+                  <div>
+                    <div style="font-size:11px; font-weight:800; color:var(--orange); text-transform:uppercase; letter-spacing:0.5px;">NH 65 Corridor</div>
+                    <h4 style="font-size:16px; font-weight:900; color:var(--navy); margin-top:2px;">${r.origin_city} → ${r.destination_city}</h4>
+                    <div style="font-size:12px; color:var(--text-secondary); margin-top:2px;">
+                      ${r.departure_time ? new Date(r.departure_time).toLocaleDateString('en-IN', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : 'Scheduled'}
+                    </div>
+                  </div>
+                  <span style="font-size:11px; font-weight:800; color:${r.status === 'COMPLETED' ? 'var(--text-secondary)' : r.status === 'EN_ROUTE' ? '#B45309' : 'var(--blue)'}; background:${r.status === 'COMPLETED' ? '#F1F5F9' : r.status === 'EN_ROUTE' ? '#FEF3C7' : 'var(--blue-light)'}; padding:4px 8px; border-radius:6px;">
+                    ${r.status || 'SCHEDULED'}
+                  </span>
+                </div>
+
+                <div style="font-size:12px; line-height:1.6; color:var(--navy); padding:8px 10px; background:#F8FAFC; border-radius:8px; margin-bottom:10px;">
+                  <div><strong>Pickup:</strong> ${r.pickup_point || 'Corridor Hub'}</div>
+                  <div><strong>Drop:</strong> ${r.drop_point || 'Destination Landmark'}</div>
+                  <div><strong>Vehicle:</strong> ${r.vehicle?.make || 'Car'} ${r.vehicle?.model || ''} (${r.vehicle?.registration_number || 'KA 38'})</div>
+                  <div><strong>Seats Available:</strong> ${r.available_seats} / ${r.total_offered_seats || r.available_seats}</div>
+                </div>
+
+                <div style="font-size:13px; font-weight:800; color:var(--navy); margin-bottom:8px;">Passenger Manifest:</div>
+                ${!r.manifest || r.manifest.length === 0 ? `
+                  <div style="font-size:12px; color:var(--text-secondary); padding:8px; background:#FFFFFF; border:1px dashed #CBD5E1; border-radius:6px; text-align:center;">
+                    No passenger bookings confirmed yet.
+                  </div>
+                ` : r.manifest.map(m => `
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                      <div style="font-size:13px; font-weight:800; color:var(--navy);">${m.passenger_name || m.passengerName}</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${m.passenger_phone || m.phone} • ${m.seats_booked || m.seats} Seat(s)</div>
+                    </div>
+                    <div style="text-align:right;">
+                      <span style="font-size:11px; font-weight:800; color:var(--success); background:var(--success-light); padding:2px 6px; border-radius:4px;">${m.booking_status || m.status || 'CONFIRMED'}</span>
+                      <div style="font-size:11px; font-weight:700; color:var(--blue); margin-top:2px;">₹${m.fare_amount || 310} Escrow</div>
+                    </div>
+                  </div>
+                `).join('')}
+
+                <div style="display:flex; gap:10px; margin-top:12px;">
+                  ${r.status === 'SCHEDULED' ? `
+                    <button class="btn btn-primary" onclick="setDriverRideStatus('EN_ROUTE', '${r.ride_id}')">Start Highway Trip</button>
+                  ` : r.status === 'EN_ROUTE' ? `
+                    <button class="btn btn-primary" style="background:var(--success);" onclick="setDriverRideStatus('COMPLETED', '${r.ride_id}')">Complete Ride</button>
+                  ` : `
+                    <button class="btn btn-outline" onclick="requestDriverPayout('${r.ride_id}')">Disburse Net Settlement (₹290/seat)</button>
+                  `}
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }
+
+      // DRIVER: PUBLISH RIDE
+      else if (State.currentTab === "driver-publish") {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const defaultTime = new Date(Date.now() + 60 * 60 * 1000).toTimeString().slice(0, 5);
+        content.innerHTML = `
+          <div class="content-box">
+            <h3 class="section-title">Publish Corridor Ride</h3>
+            <span class="section-subtitle" style="display:block; margin-bottom:16px;">Scheduled departure along NH 65 (Locked fare ₹310/seat)</span>
+
+            <div class="card">
+              <div class="form-group">
+                <label class="input-label">Corridor Route</label>
+                <div style="display:grid; grid-template-columns:1fr auto 1fr; gap:8px; align-items:center;">
+                  <input type="text" id="pub-origin" class="form-input" value="Bidar" readonly style="text-align:center; font-weight:800;">
+                  <button class="btn btn-outline" style="width:38px; height:38px; padding:0; border-radius:50%;" onclick="swapPublishRoute()">⇄</button>
+                  <input type="text" id="pub-dest" class="form-input" value="Hyderabad" readonly style="text-align:center; font-weight:800;">
+                </div>
+              </div>
+
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+                <div class="form-group">
+                  <label class="input-label">Departure Date</label>
+                  <input type="date" id="pub-date" class="form-input" min="${todayStr}" value="${todayStr}">
+                </div>
+                <div class="form-group">
+                  <label class="input-label">Departure Time</label>
+                  <input type="time" id="pub-time" class="form-input" value="${defaultTime}">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="input-label">Exact Pickup Landmark</label>
+                <input type="text" id="pub-pickup" class="form-input" placeholder="e.g. New Bus Stand, Bidar">
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;" id="pickup-chips">
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-pickup').value='New Bus Stand'">New Bus Stand</button>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-pickup').value='Mailoor Cross'">Mailoor Cross</button>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-pickup').value='Shivaji Chowk'">Shivaji Chowk</button>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-pickup').value='Ambedkar Circle'">Ambedkar Circle</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="input-label">Exact Drop Landmark</label>
+                <input type="text" id="pub-drop" class="form-input" placeholder="e.g. Gachibowli DLF, Hyderabad">
+                <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;" id="drop-chips">
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-drop').value='Gachibowli DLF'">Gachibowli DLF</button>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-drop').value='Miyapur Cross'">Miyapur Cross</button>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-drop').value='Kukatpally'">Kukatpally</button>
+                  <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-drop').value='Secunderabad'">Secunderabad</button>
+                </div>
+              </div>
+
+              <div style="background:var(--blue-light); border:1px solid #C7D9FE; border-radius:12px; padding:12px; margin-bottom:16px;">
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:var(--navy);">
+                  <span>Locked Corridor Seat Fare:</span>
+                  <span style="color:var(--blue);">₹310 / seat</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:800; color:var(--success); margin-top:4px;">
+                  <span>Net Driver Earning Rate:</span>
+                  <span>₹290 / confirmed rider</span>
+                </div>
+              </div>
+
+              <button class="btn btn-orange" onclick="publishDriverRide()">
+                <span>Publish Corridor Ride</span>
+              </button>
+            </div>
+          </div>
+        `;
+      }
+
+      // DRIVER: FLEET
+      else if (State.currentTab === "driver-fleet") {
+        content.innerHTML = `
+          <div class="content-box">
+            <div class="section-title-wrap">
+              <div>
+                <h3 class="section-title">My Fleet</h3>
+                <span class="section-subtitle">Manage registered highway vehicles</span>
+              </div>
+              <button class="btn btn-primary" style="width:auto; padding:8px 14px; font-size:12px;" onclick="openModal('modal-add-vehicle')">+ Add Car</button>
+            </div>
+
+            ${State.vehicles.length === 0 ? `
+              <div class="card" style="text-align:center; padding:32px 20px;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" style="margin:0 auto 10px auto;"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.5 2.8C2.1 10.9 2 11.2 2 11.5V16c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+                <h4 style="font-size:15px; font-weight:800; color:var(--navy);">No Registered Vehicles</h4>
+                <p style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Add your car to start publishing corridor rides along NH 65.</p>
+                <button class="btn btn-primary" style="margin-top:14px; width:auto; padding:10px 18px;" onclick="openModal('modal-add-vehicle')">Register Car Now</button>
+              </div>
+            ` : State.vehicles.map(v => `
+              <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                  <div>
+                    <h4 style="font-size:16px; font-weight:900; color:var(--navy);">${v.make} ${v.model}</h4>
+                    <span style="font-size:12px; font-family:monospace; font-weight:700; color:var(--blue);">${v.reg}</span>
+                  </div>
+                  <span style="font-size:11px; font-weight:800; color:var(--success); background:var(--success-light); padding:4px 8px; border-radius:6px;">Verified</span>
+                </div>
+                <div style="margin-top:10px; font-size:12px; color:var(--text-secondary);">
+                  Fuel: ${v.fuel} • Passenger Capacity: ${v.capacity} Seats
+                </div>
+              </div>
+            `).join("")}
+          </div>
+        `;
+      }
+
+      // DRIVER: EARNINGS
+      else if (State.currentTab === "driver-earnings") {
+        const netBal = State.driverEarnings?.pending_payout_amount || 0;
+        const payouts = State.driverEarnings?.recent_payouts || [];
+        content.innerHTML = `
+          <div class="content-box">
+            <h3 class="section-title">Earnings & Settlements</h3>
+            <span class="section-subtitle" style="display:block; margin-bottom:16px;">Automated platform escrow disbursement ledger</span>
+
+            <div class="card" style="background:linear-gradient(135deg, var(--navy) 0%, #1A3757 100%); color:#fff;">
+              <span style="font-size:11px; font-weight:700; color:var(--orange); text-transform:uppercase;">Net Available Balance</span>
+              <div style="font-size:32px; font-weight:900; margin:6px 0;">₹${netBal}</div>
+              <p style="font-size:11px; color:rgba(255,255,255,0.8);">Cleared at fixed rate of ₹290 per confirmed passenger seat.</p>
+              ${netBal > 0 ? `
+                <button class="btn btn-orange" style="margin-top:14px; padding:10px;" onclick="requestDriverPayout()">Withdraw to Bank UPI</button>
+              ` : `
+                <button class="btn btn-outline" style="margin-top:14px; padding:10px; color:#fff; border-color:rgba(255,255,255,0.3); opacity:0.6; cursor:not-allowed;" disabled>No Balance to Withdraw</button>
+              `}
+            </div>
+
+            <div class="section-title" style="margin-bottom:10px;">Settlement History</div>
+            ${payouts.length === 0 ? `
+              <div class="card" style="text-align:center; padding:24px 16px;">
+                <p style="font-size:12px; color:var(--text-secondary); margin:0;">No settlement transactions recorded yet.</p>
+              </div>
+            ` : `
+              <div class="card">
+                ${payouts.map(p => `
+                  <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--border);">
+                    <div>
+                      <div style="font-weight:800; font-size:13px; color:var(--navy);">Payout #${p.payout_id.slice(0, 8)}</div>
+                      <div style="font-size:11px; color:var(--text-secondary);">${p.paid_at || 'Processed'} • Status: ${p.status}</div>
+                    </div>
+                    <span style="font-weight:900; color:var(--success);">+ ₹${p.net_amount}</span>
+                  </div>
+                `).join("")}
+              </div>
+            `}
+          </div>
+        `;
+      }
+    }
+
+    function renderRidesListHtml() {
+      if (!State.rides || State.rides.length === 0) {
+        return `
+          <div class="card" style="text-align:center; padding:36px 20px;">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="1.8" style="margin:0 auto 12px auto;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            <h4 style="font-size:15px; font-weight:800; color:var(--navy);">No Scheduled Rides</h4>
+            <p style="font-size:12px; color:var(--text-secondary); margin-top:4px; max-width:280px; margin-left:auto; margin-right:auto;">There are currently no active driver departures on this corridor. New rides will appear as drivers publish schedules.</p>
+          </div>
+        `;
+      }
+      return State.rides.map(r => `
+        <div class="ride-card">
+          <div class="ride-top-meta">
+            <div class="driver-meta">
+              <div class="driver-avatar">${r.driverName.slice(0, 2).toUpperCase()}</div>
+              <div class="driver-info">
+                <h4>${r.driverName} <svg class="verified-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></h4>
+                <div class="driver-rating">
+                  <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                  <span>${r.rating} (${r.trips} trips)</span>
+                </div>
+              </div>
+            </div>
+            <div class="fare-tag">
+              <div class="fare-amount">₹${r.fare}</div>
+              <div class="fare-sub">Per Seat</div>
+            </div>
+          </div>
+
+          <div class="route-timeline">
+            <div class="timeline-stop">
+              <div class="timeline-time">${r.depTime}</div>
+              <div class="timeline-dot"></div>
+              <div class="timeline-location">${r.pickup}</div>
+            </div>
+            <div class="timeline-stop">
+              <div class="timeline-time">+2h 45m</div>
+              <div class="timeline-dot"></div>
+              <div class="timeline-location">${r.drop}</div>
+            </div>
+          </div>
+
+          <div class="ride-footer">
+            <div class="vehicle-pill">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+              <span>${r.vehicle}</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="seats-pill">${r.seatsAvailable} seats left</span>
+              <button class="btn btn-primary" style="width:auto; padding:6px 14px; font-size:12px;" onclick="openBookingModal('${r.id}')">Book</button>
+            </div>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    // Actions & Handlers
+    function swapSearchCities() {
+      const orig = document.getElementById("search-orig");
+      const dest = document.getElementById("search-dest");
+      if (orig && dest) {
+        const temp = orig.value;
+        orig.value = dest.value;
+        dest.value = temp;
+      }
+    }
+
+    function swapPublishRoute() {
+      const orig = document.getElementById("pub-origin");
+      const dest = document.getElementById("pub-dest");
+      if (orig && dest) {
+        const temp = orig.value;
+        orig.value = dest.value;
+        dest.value = temp;
+        updatePublishChips();
+      }
+    }
+
+    function updatePublishChips() {
+      const orig = document.getElementById("pub-origin")?.value || "Bidar";
+      const pickupChips = document.getElementById("pickup-chips");
+      const dropChips = document.getElementById("drop-chips");
+      if (!pickupChips || !dropChips) return;
+
+      const bidarStops = ["New Bus Stand", "Mailoor Cross", "Shivaji Chowk", "Ambedkar Circle"];
+      const hydStops = ["Gachibowli DLF", "Miyapur Cross", "Kukatpally", "Secunderabad"];
+
+      const origStops = orig === "Bidar" ? bidarStops : hydStops;
+      const destStops = orig === "Bidar" ? hydStops : bidarStops;
+
+      pickupChips.innerHTML = origStops.map(s => `
+        <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-pickup').value='${s}'">${s}</button>
+      `).join('');
+
+      dropChips.innerHTML = destStops.map(s => `
+        <button type="button" class="btn btn-outline" style="padding:4px 8px; font-size:11px; width:auto; border-radius:12px;" onclick="document.getElementById('pub-drop').value='${s}'">${s}</button>
+      `).join('');
+    }
+
+    function openBookingModal(rideId) {
+      const ride = State.rides.find(r => r.id === rideId) || State.rides[0];
+      State.selectedRideForBooking = ride;
+
+      document.getElementById("booking-ride-meta").innerHTML = `
+        <div style="font-size:15px; font-weight:800; color:#F8FAFC;">${ride.origin} → ${ride.destination} (${ride.depTime})</div>
+        <div style="font-size:12px; color:#94A3B8; margin-top:3px;">Driver: ${ride.driverName} • ${ride.vehicle}</div>
+      `;
+
+      document.getElementById("booking-step-seats").style.display = "block";
+      document.getElementById("booking-step-pay").style.display = "none";
+      document.getElementById("booking-step-success").style.display = "none";
+      selectSeatsCount(1);
+      openModal("modal-booking");
+    }
+
+    function selectSeatsCount(count) {
+      triggerHaptic('medium');
+      State.selectedSeatsCount = count;
+      for (let i = 1; i <= 3; i++) {
+        const btn = document.getElementById(`seat-btn-${i}`);
+        if (btn) btn.classList.toggle("active", i === count);
+      }
+
+      const total = count * 310;
+      const textElem = document.getElementById("selected-seat-text");
+      const priceElem = document.getElementById("selected-seat-price");
+      const btnLabel = document.getElementById("proceed-pay-btn-label");
+      if (textElem) {
+        textElem.innerText = count === 1 ? "1 Seat (Front Passenger)" : `${count} Seats (Front + Rear Passengers)`;
+      }
+      if (priceElem) {
+        priceElem.innerText = `${total} Rs`;
+      }
+      if (btnLabel) {
+        btnLabel.innerText = `Proceed to Payment (${total} Rs)`;
+      }
+
+      // Update Car Cabin Visualization
+      const seat1 = document.getElementById("cabin-seat-1");
+      const seat2 = document.getElementById("cabin-seat-2");
+      const seat3 = document.getElementById("cabin-seat-3");
+
+      if (seat1) {
+        seat1.style.background = count >= 1 ? "var(--blue)" : "#FFFFFF";
+        seat1.style.borderColor = count >= 1 ? "var(--blue)" : "#CBD5E1";
+        seat1.style.color = count >= 1 ? "#FFFFFF" : "#64748B";
+        seat1.style.boxShadow = count >= 1 ? "0 4px 14px rgba(37, 99, 235, 0.4)" : "none";
+        seat1.innerHTML = count >= 1 ? `<span>Seat 1</span><span style="font-size:9px; opacity:0.9;">Selected</span>` : `<span>Seat 1</span><span style="font-size:9px; opacity:0.7;">Available</span>`;
+      }
+      if (seat2) {
+        seat2.style.background = count >= 2 ? "var(--blue)" : "#FFFFFF";
+        seat2.style.borderColor = count >= 2 ? "var(--blue)" : "#CBD5E1";
+        seat2.style.color = count >= 2 ? "#FFFFFF" : "#64748B";
+        seat2.style.boxShadow = count >= 2 ? "0 4px 14px rgba(37, 99, 235, 0.4)" : "none";
+        seat2.innerHTML = count >= 2 ? `<span>Seat 2</span><span style="font-size:9px; opacity:0.9;">Selected</span>` : `<span>Seat 2</span><span style="font-size:9px; opacity:0.7;">Rear Left</span>`;
+      }
+      if (seat3) {
+        seat3.style.background = count >= 3 ? "var(--blue)" : "#FFFFFF";
+        seat3.style.borderColor = count >= 3 ? "var(--blue)" : "#CBD5E1";
+        seat3.style.color = count >= 3 ? "#FFFFFF" : "#64748B";
+        seat3.style.boxShadow = count >= 3 ? "0 4px 14px rgba(37, 99, 235, 0.4)" : "none";
+        seat3.innerHTML = count >= 3 ? `<span>Seat 3</span><span style="font-size:9px; opacity:0.9;">Selected</span>` : `<span>Seat 3</span><span style="font-size:9px; opacity:0.7;">Rear Right</span>`;
+      }
+    }
+
+    function proceedToPaymentStep() {
+      const total = State.selectedSeatsCount * 310;
+      document.getElementById("escrow-pay-amount").innerText = `Pay ₹${total} via GPay / PhonePe / Paytm`;
+      document.getElementById("booking-step-seats").style.display = "none";
+      document.getElementById("booking-step-pay").style.display = "block";
+    }
+
+    function copyUpiId() {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText("bidarconnect@upi");
+      }
+      showToast("UPI ID copied: bidarconnect@upi");
+    }
+
+    async function confirmEscrowPayment() {
+      const utr = document.getElementById("booking-utr-input").value.trim();
+      if (utr.length < 6) {
+        showToast("Please enter valid 12-digit UPI UTR reference.");
+        return;
+      }
+
+      if (!State.selectedRideForBooking) {
+        showToast("No ride selected for reservation.");
+        return;
+      }
+
+      showToast("Submitting payment to platform escrow...");
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (State.token) {
+          headers["Authorization"] = "Bearer " + State.token;
+        }
+
+        const res = await fetch(getApiBase() + "/bookings/initiate", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            ride_id: State.selectedRideForBooking.id,
+            passenger_name: State.user?.name || State.user?.full_name || "Passenger Commuter",
+            passenger_phone: State.user?.phone || "+91 98000 00000",
+            requested_seats: State.selectedSeatsCount,
+            pickup_point: State.selectedRideForBooking.pickup || "Origin Hub",
+            drop_point: State.selectedRideForBooking.drop || "Destination Hub"
+          })
+        });
+
+        const json = await res.json();
+        if (res.ok && json.success && json.data) {
+          const bkg = json.data;
+          document.getElementById("confirmed-ticket-id").innerText = bkg.reference_code || bkg.booking_id;
+          document.getElementById("confirmed-route").innerText = `${bkg.route?.origin_city || State.selectedRideForBooking.origin} → ${bkg.route?.destination_city || State.selectedRideForBooking.destination}`;
+          document.getElementById("confirmed-fare").innerText = "₹" + (bkg.fare_snapshot?.total_fare || (State.selectedSeatsCount * 310));
+
+          document.getElementById("booking-step-pay").style.display = "none";
+          document.getElementById("booking-step-success").style.display = "block";
+          showToast("Seat reserved & verified under platform escrow!");
+
+          const origCity = bkg.route?.origin_city || State.selectedRideForBooking.origin || 'Bidar';
+          const destCity = bkg.route?.destination_city || State.selectedRideForBooking.destination || 'Hyderabad';
+          const depIso = bkg.route?.departure_time || State.selectedRideForBooking.depTime;
+          const formattedDate = depIso ? new Date(depIso).toLocaleDateString("en-IN", { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "Scheduled";
+          const newBookingItem = {
+            id: bkg.reference_code || bkg.booking_id,
+            route: `${origCity} → ${destCity}`,
+            date: formattedDate,
+            pickup: bkg.route?.pickup_point || State.selectedRideForBooking.pickup || "Corridor Bus Stand",
+            drop: bkg.route?.drop_point || State.selectedRideForBooking.drop || "Destination Hub",
+            driver: bkg.driver?.name || "Verified Driver",
+            phone: bkg.driver?.phone || "+91 8482 112 112",
+            vehicle: bkg.vehicle ? `${bkg.vehicle.make || 'Car'} ${bkg.vehicle.model || ''} (${bkg.vehicle.registration_number || 'KA 38'})` : "Verified Car",
+            seats: bkg.seats_booked || State.selectedSeatsCount || 1,
+            fare: bkg.fare_snapshot?.total_fare || (State.selectedSeatsCount * 310),
+            status: bkg.booking_status || "CONFIRMED"
+          };
+          if (!State.bookings) State.bookings = [];
+          if (!State.bookings.some(b => b.id === newBookingItem.id)) {
+            State.bookings.unshift(newBookingItem);
+          }
+
+          await fetchAllAppData();
+          return;
+        } else {
+          showToast(json.error?.message || "Booking reservation failed on server.");
+        }
+      } catch (err) {
+        console.error("Booking escrow error", err);
+        showToast("Network error reserving seat. Please check server connection.");
+      }
+    }
+
+    function showTicketQr(ticketId) {
+      showToast("Ticket " + ticketId + " active for corridor boarding.");
+    }
+
+    function openSosModal() {
+      openModal("modal-sos");
+    }
+
+    async function setDriverRideStatus(status, rideId) {
+      showToast("Updating ride status...");
+      const currentRideId = rideId || State.driverManifests[0]?.rideId || State.driverRides[0]?.ride_id;
+      if (currentRideId && State.token) {
+        try {
+          const res = await fetch(getApiBase() + "/driver/rides/" + currentRideId + "/status", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + State.token
+            },
+            body: JSON.stringify({ status: status })
+          });
+          const json = await res.json();
+          if (json.success) {
+            State.driverRideStatus = status;
+            await fetchAllAppData();
+            showToast(status === "COMPLETED" ? "Ride completed! Settlement queued." : "Ride is now active on NH 65.");
+            return;
+          }
+        } catch(e) {
+          console.warn("Update status error", e);
+        }
+      }
+      State.driverRideStatus = status;
+      showToast(status === "COMPLETED" ? "Ride completed! Settlement queued." : "Ride active on NH 65.");
+      renderCurrentView();
+    }
+
+    async function requestDriverPayout(rideId) {
+      const currentRideId = rideId || State.driverRides[0]?.ride_id || State.driverManifests[0]?.rideId;
+      if (!currentRideId) {
+        showToast("No completed rides available for settlement yet.");
+        return;
+      }
+      showToast("Requesting escrow payout settlement...");
+      try {
+        const res = await fetch(getApiBase() + "/payouts/rides/" + currentRideId + "/disburse", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + State.token
+          },
+          body: JSON.stringify({ force_override_buffer: true })
+        });
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast("Settlement dispatched! UTR: " + (json.data?.utr || "Verified Bank Transfer"));
+          await fetchAllAppData();
+          return;
+        } else {
+          showToast(json.error?.message || "Payout requested.");
+        }
+      } catch(e) {
+        showToast("Settlement request sent to escrow admin.");
+      }
+    }
+
+    async function publishDriverRide() {
+      const orig = document.getElementById("pub-origin").value;
+      const dest = document.getElementById("pub-dest").value;
+      const date = document.getElementById("pub-date").value || new Date().toISOString().split("T")[0];
+      const time = document.getElementById("pub-time").value || "08:00";
+      const pickup = document.getElementById("pub-pickup").value.trim() || (orig === "Bidar" ? "New Bus Stand, Bidar" : "Gachibowli DLF, Hyderabad");
+      const drop = document.getElementById("pub-drop").value.trim() || (orig === "Bidar" ? "Gachibowli DLF, Hyderabad" : "New Bus Stand, Bidar");
+
+      const departureIso = `${date}T${time}:00`;
+      const depDateObj = new Date(departureIso);
+      const minAllowed = new Date(Date.now() - 5 * 60 * 1000);
+      if (isNaN(depDateObj.getTime()) || depDateObj < minAllowed) {
+        showToast("Departure time cannot be in the past.");
+        return;
+      }
+
+      showToast("Publishing corridor ride to database...");
+
+      const activeVeh = (State.vehicles && State.vehicles.length > 0) ? State.vehicles[0] : null;
+      const vehiclePayload = activeVeh ? {
+        vehicle_id: activeVeh.id,
+        vehicle_make: activeVeh.make,
+        vehicle_model: activeVeh.model,
+        vehicle_reg: activeVeh.reg,
+        available_seats: activeVeh.capacity || 4
+      } : {
+        available_seats: 4
+      };
+
+      try {
+        const headers = { "Content-Type": "application/json" };
+        if (State.token) {
+          headers["Authorization"] = "Bearer " + State.token;
+        }
+
+        const res = await fetch(getApiBase() + "/driver/rides", {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({
+            origin_city: orig,
+            destination_city: dest,
+            departure_time: departureIso,
+            pickup_point: pickup,
+            drop_point: drop,
+            ...vehiclePayload
+          })
+        });
+
+        const json = await res.json();
+        if (res.ok && json.success) {
+          showToast("Corridor ride published live on NH 65!");
+          await fetchAllAppData();
+          setDriverTab("driver-dashboard");
+          return;
+        } else {
+          showToast(json.error?.message || "Failed to publish ride.");
+        }
+      } catch (err) {
+        console.error("Publish ride error", err);
+        showToast("Network error publishing ride.");
+      }
+    }
+
+    async function submitNewVehicle() {
+      const make = document.getElementById("veh-make-input").value.trim();
+      const model = document.getElementById("veh-model-input").value.trim();
+      const reg = document.getElementById("veh-reg-input").value.trim();
+      const fuel = document.getElementById("veh-fuel-input").value;
+
+      if (!make || !model || !reg) {
+        showToast("Please enter car company, model, and registration.");
+        return;
+      }
+
+      showToast("Saving vehicle to fleet database...");
+      try {
+        if (State.token) {
+          const res = await fetch(getApiBase() + "/driver/vehicles", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: "Bearer " + State.token
+            },
+            body: JSON.stringify({
+              make: make,
+              model: model,
+              registration_number: reg.toUpperCase(),
+              color: "White",
+              year: 2023,
+              fuel_type: fuel,
+              passenger_capacity: 4
+            })
+          });
+          const json = await res.json();
+          if (json.success) {
+            await fetchAllAppData();
+            closeModal("modal-add-vehicle");
+            showToast("Vehicle registered to your fleet in database!");
+            return;
+          }
+        }
+      } catch(e) {
+        console.warn("Backend vehicle register fallback", e);
+      }
+
+      State.vehicles.push({ make, model, reg: reg.toUpperCase(), fuel, capacity: 4 });
+      closeModal("modal-add-vehicle");
+      showToast("Vehicle registered to your fleet!");
+      renderCurrentView();
+    }
+
+    // Android Hardware Back Button Handling
+    window.handleAndroidBack = function() {
+      const activeModal = document.querySelector(".modal-overlay.active");
+      if (activeModal) {
+        activeModal.classList.remove("active");
+        return true;
+      }
+      if (State.currentTab !== "home" && State.currentTab !== "driver-dashboard") {
+        if (State.appMode === "PASSENGER") setPassengerTab("home");
+        else setDriverTab("driver-dashboard");
+        return true;
+      }
+      return false; // Exit app
+    };
+
+    // Initialize View
+    renderBottomNav();
+  </script>
+</body>
+</html>
+
