@@ -6,6 +6,15 @@ from apps.backend.app.main import app
 class TestBidarConnectAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        import asyncio
+        from apps.backend.app.database.session import engine
+        from apps.backend.app.database.base import Base
+
+        async def init_db():
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+
+        asyncio.run(init_db())
         cls.client = TestClient(app)
 
     def setUp(self):
